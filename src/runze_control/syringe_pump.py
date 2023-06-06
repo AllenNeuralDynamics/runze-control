@@ -63,21 +63,20 @@ class SY01B:
     def _send_common_cmd(self, func, b3, b4):
         cmd_bytes = struct.pack(PacketFormat.SendCommon, self.address, func,
                                 b3, b4)
-        # return reply struct.
-        return self._send(cmd_bytes)
+        checksum = sum(bytearray(cmd))
+        packet = cmd_bytes + checksum
+        return self._send(packet)
 
     def _send_factory_cmd(self, address, param_value):
-        # Pack Factory Cmd PWD Code
+        # Pack Factory Command password in the appropriate location.
         cmd_bytes = struct.pack(PacketFormat.SendFactory, self.address, func,
                                 FACTORY_CMD_PWD_CODE, b3, b4)
-        return self._send(cmd_bytes)
+        checksum = sum(bytearray(cmd))
+        packet = cmd_bytes + checksum
+        return self._send(packet)
 
     def _send(self, cmd: bytes):
-        # Construct checksum (bytes 1-6).
-        checksum = sum(bytearray(cmd))
-        packet = cmd+checksum
         self.log.debug(f"Sending: {repr(str(packet))}"
-        self.ser.send(cmd+checksum)
         reply = self.ser.read(REPLY_NUM_BYTES)
         self.log.debug(f"Reply: {repr(reply)}")
         return reply
