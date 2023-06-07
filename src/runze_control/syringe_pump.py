@@ -1,7 +1,7 @@
 """Syringe Pump Driver."""
 from serial import Serial, SerialException
-from runze_control.device_codes import *
-from runze_control import common_device_codes as common_codes
+from runze_control import common_device_codes as codes
+import logging
 import struct
 
 
@@ -11,16 +11,16 @@ class SY01B:
     DEFAULT_TIMEOUT_S = 1.0  # Default communication timeout in seconds.
     VALID_RS232_AND_RS485_BAUDRATES_BPS = [9600, 19200, 38400, 57600, 115200]
 
-    def __init__(self, port: str, baudrate: int = None,
+    def __init__(self, com_port: str, baudrate: int = None,
                  bus_address: int = 0x00):
         """Init. Connect to a device with the specified address via an
            RS232 interface.
         """
         self.address = bus_address
         self.ser = None
-        self.log = logging.getLogger(__name__)
+        self.log = logging.getLogger(f"{__name__}.{com_port}")
         # if baudrate is unspecified, try all of them before giving up.
-        baudrates = [baudrate] if baudrate is not None
+        baudrates = [baudrate] if baudrate is not None \
                     else SY01B.VALID_RS232_AND_RS485_BAUDRATES_BPS
         # Try all valid baud rates.
         try:
@@ -81,24 +81,25 @@ class SY01B:
     def _send_query(self, func: int, param_value: int = 0x0000):
         """Send a common command frame to issue a query.
            Return a reply frame as a dict."""
-        cmd_bytes = struct.pack(PacketFormat.SendCommon, self.address, func,
-                                param_value)
-        checksum = sum(bytearray(cmd))
+        cmd_bytes = struct.pack(codes.PacketFormat.SendCommon.value,
+                                self.address, func, param_value)
+        checksum = sum(bytearray(cmd_bytes))
         packet = cmd_bytes + checksum
         return self._send(packet)
 
     def _send_factory_cmd(self, func: int, param_value):
         # Pack Factory Command password in the appropriate location.
-        cmd_bytes = struct.pack(PacketFormat.SendFactory, self.address, func,
-                                FACTORY_CMD_PWD_CODE, b3, b4)
-        checksum = sum(bytearray(cmd))
+        cmd_bytes = struct.pack(codes.PacketFormat.SendFactory.value,
+                                self.address, func, codes.FACTORY_CMD_PWD_CODE,
+                                param_value)
+        checksum = sum(bytearray(cmd_bytes))
         packet = cmd_bytes + checksum
         return self._send(packet)
 
-    def _send(self, cmd: bytes):
-        self.log.debug(f"Sending: {repr(str(packet))}"
-        reply = self.ser.read(REPLY_NUM_BYTES)
+    def _send(self, packet: bytes):
+        self.log.debug(f"Sending: {repr(str(packet))}")
+        reply = self.ser.read(codes.REPLY_NUM_BYTES)
         self.log.debug(f"Reply: {repr(reply)}")
-        reply_struct = struct.unpack(PacketFormat.Reply, reply)
-        return dict(zip(reply_fields, common_device_codes.ReplyFields))
+        reply_struct = struct.unpack(codes.PacketFormat.Reply.value, reply)
+        return dict(zip(reply_struct, codes.ReplyFields))
 

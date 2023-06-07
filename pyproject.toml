@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "runze_pump"
+name = "runze_control"
 description = "a python driver for Aurora Pro Scientific or Runze Fluid SY-01B syringe pumps"
 dynamic = ["version"]
 license = {text= "MIT"}
@@ -37,5 +37,5 @@ repository = "https://github.com/AllenNeuralDynamics/runze-control"
 where = ["src"]
 
 [tool.setuptools.dynamic]
-version = {attr = "runze_pump.__version__"}
+version = {attr = "runze_control.__version__"}
 readme = {file = ["README.md"]}
