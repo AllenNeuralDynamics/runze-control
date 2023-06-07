@@ -11,6 +11,10 @@ class PacketFormat(Enum):
     SendFactory = "<BBBBBBBBBBBBH"
     Reply = "<BBBBBBH"
 
+
+ReplyFields = ('stx', 'addr', 'status', 'parameter', 'etx', 'checksum')
+
+
 class FactoryCmdCode(Enum):
     """Codes for specifying the states of various calibration settings."""
     Address = 0x00

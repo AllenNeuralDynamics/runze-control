@@ -6,24 +6,25 @@ SYRINGE_ENCODER_MAX_STEPS = 6000
 MOTOR_MAX_SPEED = 1000
 
 
-class CommonQueryCode(Enum):
-    Address = 0x20
-    RS232BaudRate = 0x21
-    RS485BaudRate = 0x22
-    CANBaudRate = 0x23
-    ResetUponPowerUpState = 0x2E
-    CANDestinationAddress = 0x30
-    MulticastChannel1Address = 0x70
-    MulticastChannel2Address = 0x71
-    MulticastChannel3Address = 0x72
-    MulticastChannel4Address = 0x73
-    CurrentChannelAddress = 0xAE
-    CurrentVersion = 0x3F
-    MotorStatus = 0x4A
-    ValveStatus = 0x4D
-
-
 class CommonCmdCode(Enum):
+    """Codes to issue when querying/specifying the states of various settings
+       via a Common Command frame."""
+    # Queries
+    GetAddress = 0x20  # Get Device Address
+    GetRS232BaudRate = 0x21
+    GetRS485BaudRate = 0x22
+    GetCANBaudRate = 0x23
+    GetPowerOnResetState = 0x2E
+    GetCANDestinationAddress = 0x30
+    GetMulticastChannel1Address = 0x70
+    GetMulticastChannel2Address = 0x71
+    GetMulticastChannel3Address = 0x72
+    GetMulticastChannel4Address = 0x73
+    GetCurrentChannelAddress = 0xAE
+    GetCurrentVersion = 0x3F
+    GetMotorStatus = 0x4A
+    GetValveStatus = 0x4D
+    # Commands
     MoveValveClockwiseMoveInSteps  = 0x42  # Move valve clockwise a specified
                                            # number of encoder steps.
     MoveValveCounterClockwiseInSteps = 0x43  # Move valve counterclockwise a
