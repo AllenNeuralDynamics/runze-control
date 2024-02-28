@@ -1,12 +1,12 @@
 """Syringe pump device codes."""
-from enum import Enum
+from enum import IntEnum
 
 VALVE_ENCODER_MAX_STEPS = 2048
 SYRINGE_ENCODER_MAX_STEPS = 6000
 MOTOR_MAX_SPEED = 1000
 
 
-class CommonCmdCode(Enum):
+class CommonCmdCode(IntEnum):
     """Codes to issue when querying/specifying the states of various settings
        via a Common Command frame."""
     # Queries
@@ -25,12 +25,12 @@ class CommonCmdCode(Enum):
     GetMotorStatus = 0x4A
     GetValveStatus = 0x4D
     # Commands
-    MoveValveClockwiseMoveInSteps  = 0x42  # Move valve clockwise a specified
-                                           # number of encoder steps.
+    MoveValveClockwiseMoveInSteps = 0x42  # Move valve clockwise a specified
+                                          # number of encoder steps.
     MoveValveCounterClockwiseInSteps = 0x43  # Move valve counterclockwise a
                                              # specified number of encoder
                                              # steps.
-    MoveValvetoPort = 0x44  # Move valve to the port specified by B4. The
+    MoveValveToPort = 0x44  # Move valve to the port specified by B4. The
                             # approach direction is determined automatically.
                             # Values range from 1-N, where N is the number of
                             # ports.
@@ -42,6 +42,6 @@ class CommonCmdCode(Enum):
     SetSpeed = 0x4B  # TODO: plunger or valve stator speed?
     MovePlungerAbsolute = 0x4E  # Move syringe plunger to an absolute position
                                 # in steps [0-6000].
-    GetSyringePostion = 0x66  # Get syringe pump address(?) TODO and possibly the position too?
+    GetSyringePosition = 0x66  # Get syringe pump address(?) TODO and possibly the position too?
     SyncSyringePumpPosition = 0x67  # TODO: what does this actually do?
 

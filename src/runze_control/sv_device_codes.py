@@ -1,8 +1,17 @@
 """Syringe pump device codes."""
-from enum import Enum
+from enum import IntEnum
+
+# Port-to-Port Dead Volumes for various specific models
+# TODO: make dict, keyed by part number sub-fields.
+SV01_DEAD_VOLUME_UL = 4.5
+SV07_X_S_T6_DEAD_VOLUME_UL = 27.5
+SV07_X_S_T8_DEAD_VOLUME_UL = SV07_X_S_T6_DEAD_VOLUME_UL
+SV07_X_S_T10_DEAD_VOLUME_UL = SV07_X_S_T6_DEAD_VOLUME_UL
+SV07_X_S_T12_DEAD_VOLUME_UL = 22.43
+SV07_X_S_T16_DEAD_VOLUME_UL = 33.68
 
 
-class CommonCmdCode(Enum):
+class CommonCmdCode(IntEnum):
     """Codes to issue when querying/specifying the states of various settings
        via a Common Command frame."""
     # Queries

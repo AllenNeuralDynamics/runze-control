@@ -1,5 +1,15 @@
 python serial interfaces to various devices by Runze Fluid and Aurora Pro Scientific.
 
+## Installation
+<!--
+To install this package from [PyPI](https://pypi.org/project/TigerASI/0.0.2/), invoke: `pip install TigerASI`.
+-->
+
+To install this package from the Github in editable mode, from this directory invoke: `pip install -e .`
+
+To install this package in editable mode and build the docs locally, invoke: `pip install -e .[dev]`
+
+
 ## Supported Devices:
 * Multiport Selector Valve **In Progress**
     * QHF-SV07 series datasheet [pdf](https://www.runzefluid.com/uploads/file/sv-07-multiport-selector-valve-manual-v1-4.pdf)
