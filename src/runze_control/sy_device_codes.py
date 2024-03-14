@@ -10,9 +10,9 @@ class CommonCmdCode(IntEnum):
     """Codes to issue when querying/specifying the states of various settings
        via a Common Command frame."""
     # Queries
-    GetAddress = 0x20  # Get Device Address
-    GetRS232BaudRate = 0x21
-    GetRS485BaudRate = 0x22
+    #GetAddress = 0x20  # Get Device Address
+    #GetRS232BaudRate = 0x21
+    #GetRS485BaudRate = 0x22
     GetCANBaudRate = 0x23
     GetPowerOnResetState = 0x2E
     GetCANDestinationAddress = 0x30
@@ -36,7 +36,8 @@ class CommonCmdCode(IntEnum):
                             # ports.
     ResetValvePosition = 0x4C  # Move valve to reset position and stop.
     ResetSyringePosition = 0x45  # Move syringe plunger to the start of travel.
-    ForcedReset = 0x4F  # Move syringe plunger to the start of travel and
+                                 # "Reset and home."
+    #ForcedReset = 0x4F  # Move syringe plunger to the start of travel and
                         # back off by a small amount (improves service life.)
     Halt = 0x49  # immediately stop moving the syringe and valve rotor.
     SetSpeed = 0x4B  # TODO: plunger or valve stator speed?

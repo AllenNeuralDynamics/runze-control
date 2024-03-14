@@ -4,7 +4,7 @@ import logging
 import pprint
 from time import sleep
 
-from runze_control.syringe_pump import SY01B
+from runze_control.syringe_pump import SY08
 
 # Uncomment for some prolific log statements.
 logger = logging.getLogger()
@@ -18,6 +18,19 @@ logger.handlers[-1].setFormatter(
 COM_PORT = "/dev/ttyUSB0"
 
 # Connect to a single pump.
-syringe_pump = SY01B(COM_PORT) # Bus address 0x00. auto-detect baud rate.
-print(f"Syringe baud rate: {syringe_pump.get_rs232_baud_rate()}")
-print(f"Syringe position: {syringe_pump.get_syringe_position()}")
+#syringe_pump = SY01B(COM_PORT, baudrate=9600, address=0x31)
+#syringe_pump = SY08(COM_PORT, address=0x20)
+#syringe_pump = SY08(COM_PORT, address=0x31)
+syringe_pump = SY08(COM_PORT, address=0x00)
+#syringe_pump = None
+#for address in range(0, 0xFF+1):
+#    try:
+#        # auto-detect baud rate.
+#        syringe_pump = SY01B(COM_PORT, baudrate=9600, address=address)
+#        break
+#    except Exception:
+#        pass
+print(f"Syringe address: {syringe_pump.get_address()}")
+syringe_pump.reset_syringe_position()
+#print(f"Syringe baud rate: {syringe_pump.reset_valve_position()}")
+print(f"Syringe baud rate: {syringe_pump.get_serial_baudrate()}")
