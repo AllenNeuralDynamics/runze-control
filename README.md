@@ -14,7 +14,7 @@ To install this package in editable mode and build the docs locally, invoke: `pi
 * Multiport Selector Valve **In Progress**
     * QHF-SV07 series datasheet [pdf](https://www.runzefluid.com/uploads/file/sv-07-multiport-selector-valve-manual-v1-4.pdf)
 * Syringe Pump **In Progress**
-    * ZSB-SY01B series datasheet [pdf](https://www.runzefluid.com/uploads/file/sy-01b-user's-manual-v1-0.pdf)
+    * ZSB-SY01B series datasheet [1.0 pdf](https://www.runzefluid.com/uploads/file/sy-01b-user's-manual-v1-0.pdf), [1.1 pdf](https://www.runzefluid.com/uploads/file/sy-01b-ascii-code-instruction-manuall-v1-1.pdf)
 
 
 ## Getting Started
