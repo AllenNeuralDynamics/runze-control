@@ -74,7 +74,7 @@ class SY08(RunzeDevice):
         12.5: 600, # 12.5mL syringe volume max rpm
         25: 500 # 25mL syringe volume max rpm
     }
-    SYRINGE_MAX_POSITION_STEPS = 12000
+    MAX_POSITION_STEPS = 12000
 
     def __init__(self, com_port: str, baudrate: int = None,
                  address: int = 0x31,
@@ -105,10 +105,15 @@ class SY08(RunzeDevice):
         reply = self._send_query(sy_codes.CommonCmdCode.GetSyringePosition)
         return reply['parameter']
 
+    #@syringe_range_check()
     def aspirate(self, microliters: float):
         # Motor step count syringe size.
+        steps = 0
+        self.log.debug(f"Aspirating {microliters}[uL] (i.e: "
+            f"{steps}/{self.__class__.MAX_POSITION_STEPS} steps).")
         pass
 
+    #@syringe_range_check()
     def dispense(self, microliters: float):
         return self.aspirate(microliters)
 
@@ -116,8 +121,16 @@ class SY08(RunzeDevice):
         # Motor step count syringe size.
         pass
 
+    #@syringe_range_check()
     def move_absolute_in_steps(self, steps: int):
         pass
 
     def move_absolute_in_percent(self, percent: float):
-        pass
+        if (percent > 100) or (percent < 0):
+            raise ValueError(f"Requested plunger movement ({percent}) "
+                             "is out of range [0 - 100].")
+        steps = round(percent / 100.0 * self.__class__.MAX_POSITION_STEPS)
+        self.log.debug(f"Moving plunger to {percent}% range (i.e: "
+            f"{steps}/{self.__class__.MAX_POSITION_STEPS} steps).")
+        self._send_common_cmd(sy_codes.CommonCmdCode.MovePlungerAbsolute,
+                              steps)

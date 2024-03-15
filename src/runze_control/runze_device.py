@@ -129,6 +129,10 @@ class RunzeDevice:
 
     # Runze Protocol cmds are made available through:
     # _send_common_cmd, _send_query, _send_factory_cmd
+    def _send_common_cmd(self, func: Union[runze_codes.CommonCmdCode, int],
+                         param_value: int):
+        b3, b4 = param_value.to_bytes(2, 'little')
+        return self._send_common_cmd(func, b3, b4)
 
     def _send_common_cmd(self, func: Union[runze_codes.CommonCmdCode, int],
                          b3: int, b4: int):
@@ -143,8 +147,8 @@ class RunzeDevice:
         return self.parse_runze_reply(self._send(packet,
                                                  protocol=Protocol.RUNZE))
 
-    # FIXME: func should hint Union type.
-    def _send_query(self, func: int, param_value: int = 0x0000):
+    def _send_query(self, func: Union[runze_codes.CommonCmdCode, int],
+                    param_value: int = 0x0000):
         """Send a query and return the reply."""
         b3, b4 = param_value.to_bytes(2, 'little')
         return self._send_common_cmd(func, b3, b4)
