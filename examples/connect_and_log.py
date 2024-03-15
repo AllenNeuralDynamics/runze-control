@@ -21,7 +21,7 @@ COM_PORT = "/dev/ttyUSB0"
 #syringe_pump = SY01B(COM_PORT, baudrate=9600, address=0x31)
 #syringe_pump = SY08(COM_PORT, address=0x20)
 #syringe_pump = SY08(COM_PORT, address=0x31)
-syringe_pump = SY08(COM_PORT, address=0x00)
+syringe_pump = SY08(COM_PORT, address=0x00, syringe_volume_ul=25)
 #syringe_pump = None
 #for address in range(0, 0xFF+1):
 #    try:
@@ -31,6 +31,6 @@ syringe_pump = SY08(COM_PORT, address=0x00)
 #    except Exception:
 #        pass
 print(f"Syringe address: {syringe_pump.get_address()}")
-syringe_pump.reset_syringe_position()
+#syringe_pump.reset_syringe_position()
 #print(f"Syringe baud rate: {syringe_pump.reset_valve_position()}")
-print(f"Syringe baud rate: {syringe_pump.get_serial_baudrate()}")
+print(f"Syringe baud rate: {syringe_pump.get_rs232_baudrate()}")

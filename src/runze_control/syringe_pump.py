@@ -1,7 +1,8 @@
 """Syringe Pump Driver."""
 from runze_control.common_device_codes import *
 from runze_control.runze_device import RunzeDevice
-from runze_control import sy_device_codes as sy_codes
+from runze_control import runze_protocol_codes as runze_codes
+from runze_control import sy08_device_codes as sy08_codes
 from typing import Union
 
 
@@ -28,27 +29,52 @@ class SY01B(RunzeDevice):
         self.port_count = port_count
         self.syringe_volume_ul = syringe_volume_ul
 
+    def forced_reset(self):
+        """Move syringe pump to the start of travel and back off by a small
+           amount."""
+        if self.protocol == Protocol.RUNZE:
+            reply = self._send_query(runze_protocol.CommonCmdCode.ForcedReset)
+            return reply['parameter']
+        else:
+            raise NotImplementedError
+
     def reset_valve_position(self):
-        reply = self._send_query(sy_codes.CommonCmdCode.ResetValvePosition)
-        return reply['parameter']
+        self.log.debug("Resetting valve position.")
+        if self.protocol == Protocol.RUNZE:
+            reply = self._send_query(sy_codes.CommonCmdCode.ResetValvePosition)
+            return reply['parameter']
+        else:
+            raise NotImplementedError
 
     def reset_syringe_position(self):
         self.log.debug("Resetting syringe position.")
-        reply = self._send_query(sy_codes.CommonCmdCode.ResetValvePosition)
-        return reply['parameter']
+        if self.protocol == Protocol.RUNZE:
+            reply = self._send_query(sy_codes.CommonCmdCode.ResetSyringePosition)
+            return reply['parameter']
+        else:
+            raise NotImplementedError
 
     def move_valve_clockwise(self, steps):
-        pass
+        raise NotImplementedError
 
     def move_valve_counterclockwise(self, steps):
-        pass
+        raise NotImplementedError
 
     def select_port(self, port_num: int, wait: bool = True):
-        self._send_query(sy_codes.MotorStatus)
+        raise NotImplementedError
+        #self._send_query(sy_codes.MotorStatus)
 
 
 class SY08(RunzeDevice):
     """Syringe Pump."""
+
+    SYRINGE_VOLUME_TO_MAX_RPM = \
+    {
+        5: 600, # 5mL syringe volume max rpm
+        12.5: 600, # 12.5mL syringe volume max rpm
+        25: 500 # 25mL syringe volume max rpm
+    }
+    SYRINGE_MAX_POSITION_STEPS = 12000
 
     def __init__(self, com_port: str, baudrate: int = None,
                  address: int = 0x31,
@@ -60,9 +86,14 @@ class SY08(RunzeDevice):
            but enables volume and port-centric methods, rather than methods
            that rely on the number of encoder steps.
         """
+        if syringe_volume_ul not in self.__class__.SYRINGE_VOLUME_TO_MAX_RPM.keys():
+            raise ValueError("Syringe volume is invalid and must be one of "
+                "the following values: "
+                f"{list(self.__class__.SYRINGE_VOLUME_TO_MAX_RPM.keys())}.")
+        self.syringe_volume_ul = syringe_volume_ul
+        # Connect to port.
         super().__init__(com_port=com_port, baudrate=baudrate,
                          address=address, protocol=protocol)
-        self.syringe_volume_ul = syringe_volume_ul
 
     def reset_syringe_position(self):
         """Reset and home the syringe."""
@@ -74,8 +105,19 @@ class SY08(RunzeDevice):
         reply = self._send_query(sy_codes.CommonCmdCode.GetSyringePosition)
         return reply['parameter']
 
-    def dispense(self, microliters: float):
+    def aspirate(self, microliters: float):
+        # Motor step count syringe size.
         pass
 
+    def dispense(self, microliters: float):
+        return self.aspirate(microliters)
+
     def withdraw(self, microliters: float):
+        # Motor step count syringe size.
+        pass
+
+    def move_absolute_in_steps(self, steps: int):
+        pass
+
+    def move_absolute_in_percent(self, percent: float):
         pass

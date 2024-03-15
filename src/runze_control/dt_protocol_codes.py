@@ -14,7 +14,7 @@ class PacketFields(StrEnum):
     REPLY_FRAME_END = '\r\n'
 
 
-class DTCommands(StrEnum):
+class Commands(StrEnum):
     AbsolutePosition = "A"  # Move absolute
     RelativePickup = "P"    # Move relative in the withdraw direction.
     RelativeDispense = "D"  # Move relative in the dispense direction.

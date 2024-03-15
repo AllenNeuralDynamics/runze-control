@@ -1,7 +1,8 @@
 """Syringe Pump Driver."""
 from serial import Serial, SerialException
 from runze_control.common_device_codes import *
-from runze_control import runze_protocol_codes as runze_protocol
+from runze_control import runze_protocol_codes as runze_codes
+from runze_control import dt_protocol_codes as dt_codes
 from typing import Union
 from functools import reduce
 import logging
@@ -41,8 +42,10 @@ class RunzeDevice:
                     self.log.debug("Port open. Sending test string.")
                     if self.protocol == Protocol.RUNZE:
                         reply = self.get_address()
-                    # TODO: elif self.protocol == Protocol.DT:
-                    # Send a test message.
+                    elif self.protocol == Protocol.DT:
+                        raise NotImplementedError
+                    elif self.protocol == Protocol.OEM:
+                        raise NotImplementedError
                     break
                 except SerialException as e:
                     # Raise exception only if we've tried all valid baud rates.
@@ -50,8 +53,8 @@ class RunzeDevice:
                     if br == baudrates[-1]:
                         raise
         except SerialException as e:
-            logging.error("Error: could not open connection to SY-01B. "
-                  "Is the device plugged in? Is another program using it?")
+            logging.error("Error: could not open connection to device. "
+                "Is it plugged in and powered up? Is another program using it?")
             raise
 
     def init(self):
@@ -60,14 +63,8 @@ class RunzeDevice:
             pass
         elif self.protocol == Protocol.DT:
             # /<address>Z<do it now>
-            cmd_str = str(DTCommands.InitClockwise) + "R"
-            self._send_dt_cmd(DTCommands.InitClockwise, execute=True)
-
-
-    # FIXME: is this common to all device types?
-    def forced_reset(self):
-        reply = self._send_query(runze_protocol.CommonCmdCode.ForcedReset)
-        return reply['parameter']
+            cmd_str = str(dt_codes.Commands.InitClockwise) + "R"
+            self._send_dt_cmd(dt_codes.Commands.InitClockwise, execute=True)
 
     def set_address(self, address: int):
         """Set the device for this bus (only necessary for RS485)."""
@@ -76,7 +73,7 @@ class RunzeDevice:
     def get_address(self):
         self.log.debug("Requesting address.")
         if self.protocol == Protocol.RUNZE:
-            reply = self._send_query(runze_protocol.CommonCmdCode.GetAddress)
+            reply = self._send_query(runze_codes.CommonCmdCode.GetAddress)
             return reply['parameter']
         else:
             raise NotImplementedError
@@ -89,12 +86,12 @@ class RunzeDevice:
         pass
 
     def get_rs232_baudrate(self):
-        reply = self._send_query(runze_protocol.CommonCmdCode.GetRS232Baudrate)
-        return RS232BaudrateReply[reply['parameter']]
+        reply = self._send_query(runze_codes.CommonCmdCode.GetRS232Baudrate)
+        return runze_codes.RS232BaudrateReply[reply['parameter']]
 
     def get_rs485_baudrate(self):
-        reply = self._send_query(runze_protocol.CommonCmdCode.GetRS485Baudrate)
-        return RS485BaudrateReply[reply['parameter']]
+        reply = self._send_query(runze_codes.CommonCmdCode.GetRS485Baudrate)
+        return runze_codes.RS485BaudrateReply[reply['parameter']]
 
     def get_can_baudrate(self):
         raise NotImplementedError
@@ -111,7 +108,7 @@ class RunzeDevice:
                                 *cmd_str_bytes,
                                 DTProtocolPacketFields.FRAME_END)
         execute_cmd = "R" if execute else ""
-        packet = "{DTFields.FRAME_START}{cmd_str}{execute_cmd}"
+        packet = "{dt_codes.PacketFields.FRAME_START}{cmd_str}{execute_cmd}"
         return self._send(packet, protocol=Protocol.DT)
 
     def _send_cmd_oem(self, cmd_str: str, execute: bool = True):
@@ -133,17 +130,18 @@ class RunzeDevice:
     # Runze Protocol cmds are made available through:
     # _send_common_cmd, _send_query, _send_factory_cmd
 
-    def _send_common_cmd(self, func: Union[runze_protocol.CommonCmdCode, int],
+    def _send_common_cmd(self, func: Union[runze_codes.CommonCmdCode, int],
                          b3: int, b4: int):
         """Send a common command frame to issue a command over Runze Protocol.
            Return a reply frame as a dict."""
-        cmd_bytes = struct.pack(runze_protocol.PacketFormat.SendCommon.value,
-                                runze_protocol.PacketFields.STX,
+        cmd_bytes = struct.pack(runze_codes.PacketFormat.SendCommon.value,
+                                runze_codes.PacketFields.STX,
                                 self.address, func, b3, b4,
-                                runze_protocol.PacketFields.ETX)
+                                runze_codes.PacketFields.ETX)
         checksum = sum(bytearray(cmd_bytes))
         packet = cmd_bytes + checksum.to_bytes(2, 'little')
-        return self.parse_runze_reply(self._send(packet))
+        return self.parse_runze_reply(self._send(packet,
+                                                 protocol=Protocol.RUNZE))
 
     # FIXME: func should hint Union type.
     def _send_query(self, func: int, param_value: int = 0x0000):
@@ -151,34 +149,36 @@ class RunzeDevice:
         b3, b4 = param_value.to_bytes(2, 'little')
         return self._send_common_cmd(func, b3, b4)
 
-    def _send_factory_cmd(self, func: Union[runze_protocol.FactoryCmdCode, int],
+    def _send_factory_cmd(self, func: Union[runze_codes.FactoryCmdCode, int],
                           param_value):
         """Send a factory command frame to issue a command over Runze Protocol.
            Return a reply frame as a dict."""
         # Pack Factory Command password in the appropriate location.
-        cmd_bytes = struct.pack(runze_protocol.PacketFormat.SendFactory.value,
-                                runze_protocol.PacketFields.STX,
+        cmd_bytes = struct.pack(runze_codes.PacketFormat.SendFactory.value,
+                                runze_codes.PacketFields.STX,
                                 self.address, func,
                                 FACTORY_CMD_PWD_CODE, param_value,
-                                runze_protocol.PacketFields.ETX)
+                                runze_codes.PacketFields.ETX)
         checksum = sum(bytearray(cmd_bytes))
         packet = cmd_bytes + checksum.to_bytes(2, 'little')
-        return self.parse_runze_reply(self._send(packet))
+        return self.parse_runze_reply(self._send(packet),
+                                                 protocol=Protocol.RUNZE)
 
     def parse_runze_reply(self, reply: bytes):
         """Parse reply sent over Runze protocol into fields."""
-        reply_struct = struct.unpack(runze_protocol.PacketFormat.Reply.value,
+        reply_struct = struct.unpack(runze_codes.PacketFormat.Reply.value,
                                      reply)
-        return dict(zip(CommonReplyFields, reply_struct))
+        return dict(zip(runze_codes.CommonReplyFields, reply_struct))
 
     def _send(self, packet: bytes, protocol: Protocol = Protocol.DT):
         """Send a message over the specified protocol and return the reply."""
         self.log.debug(f"Sending (hex): {packet.hex(' ')}")
         self.ser.write(packet)
         if protocol == Protocol.RUNZE:
-            reply = self.ser.read(REPLY_NUM_BYTES)
+            reply = self.ser.read(runze_codes.REPLY_NUM_BYTES)
         elif protocol == Protocol.DT:
-            reply = self.ser.read_until(DTFields.REPLY_FRAME_END.encode('ascii'))
+            reply = self.ser.read_until(
+                dt_codes.PacketFields.REPLY_FRAME_END.encode('ascii'))
         elif protocol == Protocol.OEM:
             # check checksum.
             raise NotImplementedError("Decoding OEM protocol not yet implemented.")
