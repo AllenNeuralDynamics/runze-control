@@ -9,10 +9,10 @@ except ImportError:
 FACTORY_CMD_PWD_CODE = 0xFFEEBBAA  # Password for applying factory commands.
 REPLY_NUM_BYTES = 8
 
-class PacketFormat(Enum):
+class PacketFormat(StrEnum):
     SendCommon = "<BBBBBB" # little-endian, 6 uint8 (checksum omitted)
     SendFactory = "<BBBBBBBBBBBB" # little-endian, 12 uint8 (checksum omitted)
-    Reply = "<BBHBBH" # little-endian, 2 uint8, 1 uint16 2 uint8, 1 uint16 (checksum)
+    Reply = "<BBBHBH" # little-endian, 2 uint8, 1 uint16 2 uint8, 1 uint16 (checksum)
 
 
 class PacketFields(IntEnum):

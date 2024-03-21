@@ -31,6 +31,11 @@ syringe_pump = SY08(COM_PORT, address=0x00, syringe_volume_ul=25)
 #    except Exception:
 #        pass
 print(f"Syringe address: {syringe_pump.get_address()}")
-#syringe_pump.reset_syringe_position()
-#print(f"Syringe baud rate: {syringe_pump.reset_valve_position()}")
 print(f"Syringe baud rate: {syringe_pump.get_rs232_baudrate()}")
+#print("Resetting syringe.")
+#syringe_pump.reset_syringe_position()
+#print(f"Moving plunger (in percent.)")
+#syringe_pump.move_absolute_in_percent(25)
+print(f"Syringe position is now: {syringe_pump.get_position()}")
+# TODO: is there a "wait" function?
+#syringe_pump.move_absolute_in_percent(0)

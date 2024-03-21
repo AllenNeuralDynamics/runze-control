@@ -12,7 +12,8 @@ import struct
 class RunzeDevice:
     """Generic Runze Fluid Serial Device."""
 
-    DEFAULT_TIMEOUT_S = 0.5  # Default communication timeout in seconds.
+    #DEFAULT_TIMEOUT_S = 0.5  # Default communication timeout in seconds.
+    DEFAULT_TIMEOUT_S = 5.0  # Default communication timeout in seconds.
     VALID_SERIAL_BAUDRATES = [9600, 19200, 38400, 57600, 115200]
 
     def __init__(self, com_port: str, baudrate: int = None, address: int = 0x31,
@@ -132,9 +133,9 @@ class RunzeDevice:
     def _send_common_cmd(self, func: Union[runze_codes.CommonCmdCode, int],
                          param_value: int):
         b3, b4 = param_value.to_bytes(2, 'little')
-        return self._send_common_cmd(func, b3, b4)
+        return self._send_common_cmd_raw(func, b3, b4)
 
-    def _send_common_cmd(self, func: Union[runze_codes.CommonCmdCode, int],
+    def _send_common_cmd_raw(self, func: Union[runze_codes.CommonCmdCode, int],
                          b3: int, b4: int):
         """Send a common command frame to issue a command over Runze Protocol.
            Return a reply frame as a dict."""
@@ -144,14 +145,14 @@ class RunzeDevice:
                                 runze_codes.PacketFields.ETX)
         checksum = sum(bytearray(cmd_bytes))
         packet = cmd_bytes + checksum.to_bytes(2, 'little')
-        return self.parse_runze_reply(self._send(packet,
-                                                 protocol=Protocol.RUNZE))
+        return self._parse_runze_reply(self._send(packet,
+                                                  protocol=Protocol.RUNZE))
 
     def _send_query(self, func: Union[runze_codes.CommonCmdCode, int],
                     param_value: int = 0x0000):
         """Send a query and return the reply."""
         b3, b4 = param_value.to_bytes(2, 'little')
-        return self._send_common_cmd(func, b3, b4)
+        return self._send_common_cmd_raw(func, b3, b4)
 
     def _send_factory_cmd(self, func: Union[runze_codes.FactoryCmdCode, int],
                           param_value):
@@ -165,17 +166,22 @@ class RunzeDevice:
                                 runze_codes.PacketFields.ETX)
         checksum = sum(bytearray(cmd_bytes))
         packet = cmd_bytes + checksum.to_bytes(2, 'little')
-        return self.parse_runze_reply(self._send(packet),
+        return self._parse_runze_reply(self._send(packet),
                                                  protocol=Protocol.RUNZE)
 
-    def parse_runze_reply(self, reply: bytes):
-        """Parse reply sent over Runze protocol into fields."""
-        reply_struct = struct.unpack(runze_codes.PacketFormat.Reply.value,
-                                     reply)
-        return dict(zip(runze_codes.CommonReplyFields, reply_struct))
+    def _parse_runze_reply(self, reply: bytes):
+        """Parse reply sent over Runze protocol into respective fields."""
+        reply_struct = struct.unpack(runze_codes.PacketFormat.Reply, reply)
+        reply = dict(zip(runze_codes.CommonReplyFields, reply_struct))
+        error_code = runze_codes.ReplyStatus(reply['status'])
+        if error_code != runze_codes.ReplyStatus.NormalState:
+            raise RuntimeError(f"Device replied with error code {error_code}.")
+        return reply
 
-    def _send(self, packet: bytes, protocol: Protocol = Protocol.DT):
+    def _send(self, packet: bytes, protocol: Protocol = Protocol.DT,
+              wait: bool = True):
         """Send a message over the specified protocol and return the reply."""
+        # FIXME: implement wait option
         self.log.debug(f"Sending (hex): {packet.hex(' ')}")
         self.ser.write(packet)
         if protocol == Protocol.RUNZE:
