@@ -61,7 +61,7 @@ class SY01B(RunzeDevice):
     def move_valve_counterclockwise(self, steps):
         raise NotImplementedError
 
-    def select_port(self, port_num: int, wait: bool = True):
+    def select_port(self, port_num: int):
         raise NotImplementedError
         #self._send_query(sy_codes.MotorStatus)
 
@@ -99,10 +99,7 @@ class SY08(RunzeDevice):
 
     def reset_syringe_position(self, wait: bool = True):
         """Reset and home the syringe."""
-        # FIXME: we need a way of indicating that a reply will take a long time.
-        #   We could possibly dynamically change the TIMEOUT depending on
-        #   the command??
-        reply = self._send_query(sy08_codes.CommonCmdCode.Reset, wait)
+        reply = self._send_query(sy08_codes.CommonCmdCode.Reset)
         return reply['parameter']
 
     def get_position(self):
@@ -112,20 +109,20 @@ class SY08(RunzeDevice):
 
     # TODO: in theory, we could track how many times we could aspirate based on
     #   current position.
-    def aspirate(self, microliters: float):
+    def aspirate(self, microliters: float, wait: bool = True):
         steps_per_ul = self.__class__.MAX_POSITION_STEPS / self.syringe_volume_ul
         steps = round(microliters * steps_per_ul)
         self.log.debug(f"Aspirating {microliters}[uL] (i.e: {steps} [steps]).")
-        self._send_common_cmd(sy08_codes.CommonCmdCode.RunInCCW, steps)
+        self._send_common_cmd(sy08_codes.CommonCmdCode.RunInCCW, steps, wait)
 
-    def dispense(self, microliters: float):
-        return self.aspirate(microliters)
+    def withdraw(self, microliters: float, wait: bool = True):
+        return self.aspirate(microliters, wait)
 
-    def withdraw(self, microliters: float):
+    def dispense(self, microliters: float, wait: bool = True):
         steps_per_ul = self.__class__.MAX_POSITION_STEPS / self.syringe_volume_ul
         steps = round(microliters * steps_per_ul)
-        self.log.debug(f"Aspirating {microliters}[uL] (i.e: {steps} [steps]).")
-        self._send_common_cmd(sy08_codes.CommonCmdCode.RunInCW, steps)
+        self.log.debug(f"Dispensing {microliters}[uL] (i.e: {steps} [steps]).")
+        self._send_common_cmd(sy08_codes.CommonCmdCode.RunInCW, steps, wait)
 
     def get_remaining_capacity_ul(self):
         """return the remaining syringe capacity."""
