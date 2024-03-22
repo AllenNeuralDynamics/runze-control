@@ -43,5 +43,4 @@ print(f"Dispensing 10uL")
 syringe_pump.dispense(10)
 
 print(f"Syringe position is now: {syringe_pump.get_position()}")
-# TODO: is there a "wait" function?
 #syringe_pump.move_absolute_in_percent(0)

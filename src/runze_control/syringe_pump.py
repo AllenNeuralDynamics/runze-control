@@ -99,6 +99,7 @@ class SY08(RunzeDevice):
 
     def reset_syringe_position(self, wait: bool = True):
         """Reset and home the syringe."""
+        self.log.debug(f"Resetting syringe to 0[uL] position.")
         reply = self._send_query(sy08_codes.CommonCmdCode.Reset)
         return reply['parameter']
 
