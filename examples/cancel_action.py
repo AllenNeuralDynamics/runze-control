@@ -33,12 +33,11 @@ syringe_pump.move_absolute_in_percent(0) # wait = True
 sleep(0.5)
 print(f"Starting 50% full-scale range move.")
 syringe_pump.move_absolute_in_percent(50, wait=False)
-sleep(0.5)
+sleep(1.0)
 print(f"Halting.")
 syringe_pump.halt()
-sleep(0.5)
-syringe_position = 0
-while syringe_position == 0:
-    syringe_position = syringe_pump.get_position()
-    print(f"Syringe position: {syringe_position}")#, waiting characters: {syringe_pump.ser.in_waiting}.")
-    sleep(0.01)
+print(f"Syringe position: {syringe_pump.get_position_ul()} [uL]")
+sleep(1.0)
+print(f"Resuming movement.")
+syringe_pump.move_absolute_in_percent(50)
+print(f"Syringe position: {syringe_pump.get_position_ul()} [uL]")

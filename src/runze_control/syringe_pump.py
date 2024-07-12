@@ -109,6 +109,13 @@ class SY08(RunzeDevice):
         reply = self._send_query(sy08_codes.CommonCmdCode.GetPistonPosition)
         return reply['parameter']
 
+    def get_position_ul(self):
+        return (self.get_position() * self.syringe_volume_ul
+                / self.__class__.MAX_POSITION_STEPS)
+
+    def get_position_percent(self):
+        return self.get_position() * 100.0 / self.__class__.MAX_POSITION_STEPS
+
     # TODO: in theory, we could track how many times we could aspirate based on
     #   current position.
     def aspirate(self, microliters: float, wait: bool = True):
