@@ -12,7 +12,7 @@ class CommonCmdCode(IntEnum):
     GetCanDestinationAddress = 0x30
     GetCurrentChannelPosition = 0x3E
     GetCurrentFirmwareVersion = 0x3F
-    GetMotorStatus = 0x4A
+    GetMotorStatus = 0x4A # More of an "actuator" status depending on device.
     GetPistonPosition = 0x66
     SynchronizePistonPosition = 0x67
     GetMulticastChannel1Address = 0x70
@@ -21,7 +21,9 @@ class CommonCmdCode(IntEnum):
     GetMulticastChannel4Address = 0x73
     # Commands
     RunInCW = 0x42 # Dispense. (i.e: move relative)
-    RunInCCW = 0x4D # Aspirate (i.e: move relative)
+    # FIXME: 0x4D is query valve status on SY03 multiport syringe pumps and
+    # aspirate on SY08 pumps:
+    RunInCCW = 0x4D # Aspirate (i.e: move relative) 
     Reset = 0x45
     ForcedReset = 0x4F
     SetDynamicSpeed = 0x4B

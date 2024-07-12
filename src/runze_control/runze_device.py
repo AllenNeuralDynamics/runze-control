@@ -15,29 +15,46 @@ class RunzeDevice:
 
     DEFAULT_TIMEOUT_S = 0.25  # Default communication timeout in seconds.
     LONG_TIMEOUT_S = 30.0  # Default communication timeout in seconds.
-    VALID_SERIAL_BAUDRATES = [9600, 19200, 38400, 57600, 115200]
+    VALID_BAUDRATES = \
+    {
+        Protocol.DT: [9600, 38400],
+        Protocol.RUNZE: [9600, 19200, 38400, 57600, 115200]
+    }
 
     def __init__(self, com_port: str, baudrate: int = None, address: int = 0x31,
-                 protocol: Union[str, Protocol] = Protocol.RUNZE,
-                 port_count: int = None):
+                 protocol: Union[str, Protocol] = Protocol.RUNZE):
         """Init. Connect to a device with the specified address via an
            RS232 or RS485 interface.
+
+        :param com_port: com port to connect to.
+        :param baudrate: device baud rate. Factory default is 9600, but can be
+            changed to standard baud rates up through 115200bps via serial
+            command.
+        :param address: specify the device to connect to.
+            Note: only useable in an RS485 multidrop setup.
+            Note: external rotary switch position 0 corresponds to device 1 at
+                address 0x31 (i.e: ascii '1').
+        :param protocol: protocol over which to send commands to the device
+            ("RUNZE" or "DT" [aka: ASCII]). Protocol must match the one
+            specified on the device, but it can be changed after connecting to
+            it.
         """
         self.address = address
-        self.protocol = protocol
+        self.protocol = Protocol(protocol)
         self.ser = None
         self.log = logging.getLogger(f"{__name__}.{com_port}")
+        self.cmd_send_time_s = None
         # if baudrate is unspecified, try all of them before giving up.
         baudrates = [baudrate] if baudrate is not None \
-                    else RunzeDevice.VALID_SERIAL_BAUDRATES
+                    else RunzeDevice.VALID_BAUDRATES[self.protocol]
         # Try all valid baud rates or the one specified.
         try:
             for br in baudrates:
                 try:
                     self.log.debug(f"Connecting to device on port: {com_port} "
                                    f"at {br}[bps] on address: '{address}'.")
-                    self.ser = Serial(com_port, br,
-                                      timeout=RunzeDevice.DEFAULT_TIMEOUT_S)
+                    # We will manually apply the timeout in the _send method.
+                    self.ser = Serial(com_port, br, timeout=0)
                     self.ser.reset_input_buffer()
                     self.ser.reset_output_buffer()
                     # Test link by issuing a protocol-dependent dummy command.
@@ -45,7 +62,7 @@ class RunzeDevice:
                     if self.protocol == Protocol.RUNZE:
                         reply = self.get_address()
                     elif self.protocol == Protocol.DT:
-                        raise NotImplementedError
+                        reply = self.get_serial_number()
                     elif self.protocol == Protocol.OEM:
                         raise NotImplementedError
                     break
@@ -68,6 +85,15 @@ class RunzeDevice:
             cmd_str = str(dt_codes.Commands.InitClockwise) + "R"
             self._send_dt_cmd(dt_codes.Commands.InitClockwise, execute=True)
 
+    def get_protocol(self):
+        """Get the protocol that the device is set to communicate in."""
+        raise NotImplementedError
+        #reply = self.ser.send()
+        #if reply == ProtocolReply.RUNZE:
+        #    return Protocol.RUNZE
+        #elif reply == ProtocolReply.DT:
+        #    return Protocol.DT
+
     def set_address(self, address: int):
         """Set the device for this bus (only necessary for RS485)."""
         pass
@@ -77,8 +103,15 @@ class RunzeDevice:
         if self.protocol == Protocol.RUNZE:
             reply = self._send_query(runze_codes.CommonCmdCode.GetAddress)
             return reply['parameter']
+        elif self.protocol == Protocol.DT:
+            raise NotImplementedError
         else:
             raise NotImplementedError
+
+    def get_serial_number(self):
+        if self.protocol != Protocol.DT:
+            raise NotImplementedError
+        self._send_cmd_dt("?202") # FIXME: use enums.
 
     def set_multicast_address(self, multicast_channel: int, address: int):
         """Set the multicast address for this bus (only necessary for RS485).
@@ -98,6 +131,22 @@ class RunzeDevice:
     def get_can_baudrate(self):
         raise NotImplementedError
 
+    def is_busy(self):
+        """True if a command was previously issued without waiting, and the
+        reply has not yet been received."""
+        # Child classes may need to query another field if this class is not
+        # strictly waiting for a command to complete.
+        if self.cmd_send_time_s is None:
+            return False
+        reply = self._parse_runze_reply(self._get_reply(protocol=self.protocol,
+                                                        wait=False))
+        if reply is not None:
+            return False  # Command finished and replied.
+        return True
+
+    def wait_for_reply(self, force: bool = False):
+        return self._parse_runze_reply(self._get_reply(protocol=self.protocol,
+                                                       force=force))
 
 # Consider refactor where these are more per-protocol "make-packet" functions.
     def _send_cmd_dt(self, cmd_str: str, execute: bool = True):
@@ -131,13 +180,16 @@ class RunzeDevice:
 
     # Runze Protocol cmds are made available through:
     # _send_common_cmd, _send_query, _send_factory_cmd
+    # FIXME: child class should override the type hint for func.
     def _send_common_cmd(self, func: Union[runze_codes.CommonCmdCode, int],
-                         param_value: int, wait: bool = True):
+                         param_value: int = 0, wait: bool = True,
+                         force: bool = False):
         b3, b4 = param_value.to_bytes(2, 'little')
-        return self._send_common_cmd_raw(func, b3, b4, wait)
+        return self._send_common_cmd_raw(func, b3, b4, wait, force)
 
     def _send_common_cmd_raw(self, func: Union[runze_codes.CommonCmdCode, int],
-                         b3: int, b4: int, wait: bool = True):
+                             b3: int, b4: int, wait: bool = True,
+                             force: bool = False):
         """Send a common command frame to issue a command over Runze Protocol.
            Return a reply frame as a dict."""
         cmd_bytes = struct.pack(runze_codes.PacketFormat.SendCommon.value,
@@ -147,16 +199,19 @@ class RunzeDevice:
         checksum = sum(bytearray(cmd_bytes))
         packet = cmd_bytes + checksum.to_bytes(2, 'little')
         return self._parse_runze_reply(self._send(packet,
-                                                  protocol=Protocol.RUNZE))
+                                                  protocol=Protocol.RUNZE,
+                                                  wait=wait,
+                                                  force=force))
 
     def _send_query(self, func: Union[runze_codes.CommonCmdCode, int],
-                    param_value: int = 0x0000, wait: bool = True):
+                    param_value: int = 0x0000, wait: bool = True,
+                    force: bool = False):
         """Send a query and return the reply."""
         b3, b4 = param_value.to_bytes(2, 'little')
-        return self._send_common_cmd_raw(func, b3, b4, wait)
+        return self._send_common_cmd_raw(func, b3, b4, wait, force)
 
     def _send_factory_cmd(self, func: Union[runze_codes.FactoryCmdCode, int],
-                          param_value, wait: bool = True):
+                          param_value, wait: bool = True, force: bool = False):
         """Send a factory command frame to issue a command over Runze Protocol.
            Return a reply frame as a dict."""
         # Pack Factory Command password in the appropriate location.
@@ -167,11 +222,15 @@ class RunzeDevice:
                                 runze_codes.PacketFields.ETX)
         checksum = sum(bytearray(cmd_bytes))
         packet = cmd_bytes + checksum.to_bytes(2, 'little')
-        return self._parse_runze_reply(self._send(packet),
-                                                 protocol=Protocol.RUNZE)
+        return self._parse_runze_reply(self._send(packet,
+                                                  protocol=Protocol.RUNZE,
+                                                  wait=wait,
+                                                  force=force))
 
     def _parse_runze_reply(self, reply: bytes):
         """Parse reply sent over Runze protocol into respective fields."""
+        if not len(reply):
+            return None
         reply_struct = struct.unpack(runze_codes.PacketFormat.Reply, reply)
         reply = dict(zip(runze_codes.CommonReplyFields, reply_struct))
         error = runze_codes.ReplyStatus(reply['status'])
@@ -180,13 +239,34 @@ class RunzeDevice:
         return reply
 
     def _send(self, packet: bytes, protocol: Protocol = Protocol.DT,
-              wait: bool = True):
+              wait: bool = True, force: bool = False):
         """Send a message over the specified protocol and return the reply."""
+        if self.cmd_send_time_s is not None and not force:
+            raise RuntimeError("Cannot issue a command while the previous "
+                               "command has not yet replied.")
         self.log.debug(f"Sending (hex): {packet.hex(' ')}")
         self.ser.write(packet)
+        self.cmd_send_time_s = perf_counter()
+        if not wait:
+            return bytes() # Empty reply
+        # Every command issues a reply. Get it.
+        reply = self._get_reply(protocol, wait)
+        if len(reply) == 0:
+            raise SerialException("No reply received from device.")
+        return reply
+
+    def _get_reply(self, protocol: Protocol = Protocol.DT, wait: bool = True,
+                   force: bool = False):
+        """retrieve the reply from a previously-issued command.
+        If wait, wait up to the timeout period to retrieve the reply.
+        Otherwise return immediately with an empty reply if reply has not been
+        received.
+        """
+        if self.cmd_send_time_s is None and not force:
+            raise SerialException("Cannot retrieve a reply. "
+                                  "No command has been issued.")
         reply = bytes()
-        start_time_s = perf_counter()
-        while perf_counter() - start_time_s < self.__class__.LONG_TIMEOUT_S:
+        while True:
             try:
                 if protocol == Protocol.RUNZE:
                     reply += self.ser.read(runze_codes.REPLY_NUM_BYTES)
@@ -198,10 +278,11 @@ class RunzeDevice:
                     raise NotImplementedError("OEM protocol not yet implemented.")
             except SerialException:
                 pass
-            if (len(reply) > 0) or not wait:
+            if len(reply) or not wait:
+                break
+            if perf_counter() - self.cmd_send_time_s >= self.__class__.LONG_TIMEOUT_S:
                 break
         self.log.debug(f"Reply (hex): {reply.hex(' ')}")
-        if len(reply) == 0:
-            raise SerialException("No reply received from device.")
+        self.cmd_send_time_s = None
         return reply
 
