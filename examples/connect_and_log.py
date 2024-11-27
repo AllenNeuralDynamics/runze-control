@@ -21,7 +21,7 @@ COM_PORT = "/dev/ttyUSB0"
 #syringe_pump = SY01B(COM_PORT, baudrate=9600, address=0x31)
 #syringe_pump = SY08(COM_PORT, address=0x20)
 #syringe_pump = SY08(COM_PORT, address=0x31)
-syringe_pump = SY08(COM_PORT, address=0x00, syringe_volume_ul=25)
+syringe_pump = SY08(COM_PORT, address=0x00, syringe_volume_ul=25000)
 #syringe_pump = None
 #for address in range(0, 0xFF+1):
 #    try:

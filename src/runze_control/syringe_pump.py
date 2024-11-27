@@ -72,9 +72,9 @@ class SY08(RunzeDevice):
 
     SYRINGE_VOLUME_TO_MAX_RPM = \
     {
-        5: 600, # 5mL syringe volume max rpm
-        12.5: 600, # 12.5mL syringe volume max rpm
-        25: 500 # 25mL syringe volume max rpm
+        5000: 600, # 5mL syringe volume max rpm
+        125000: 600, # 12.5mL syringe volume max rpm
+        25000: 500 # 25mL syringe volume max rpm
     }
     MAX_POSITION_STEPS = 12000 # Full stroke is the same regardless of syringe
                                # model.
