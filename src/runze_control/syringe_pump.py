@@ -73,7 +73,7 @@ class SY08(RunzeDevice):
     SYRINGE_VOLUME_TO_MAX_RPM = \
     {
         5000: 600, # 5mL syringe volume max rpm
-        125000: 600, # 12.5mL syringe volume max rpm
+        12500: 600, # 12.5mL syringe volume max rpm
         25000: 500 # 25mL syringe volume max rpm
     }
     MAX_POSITION_STEPS = 12000 # Full stroke is the same regardless of syringe
@@ -82,16 +82,17 @@ class SY08(RunzeDevice):
     def __init__(self, com_port: str, baudrate: int = None,
                  address: int = 0x31,
                  protocol: Union[str, Protocol] = Protocol.RUNZE,
-                 syringe_volume_ul: float = None):
+                 syringe_volume_ul: int = None):
         """Init. Connect to a device with the specified address via an
            RS232 interface.
-           `syringe_volume_ul` and `port_count` specifications are optional,
+           `syringe_volume_ul` is optional
            but enables volume and port-centric methods, rather than methods
            that rely on the number of encoder steps.
         """
-        if syringe_volume_ul not in self.__class__.SYRINGE_VOLUME_TO_MAX_RPM.keys():
-            raise ValueError("Syringe volume is invalid and must be one of "
-                "the following values: "
+        if (syringe_volume_ul is not None 
+            and syringe_volume_ul not in self.__class__.SYRINGE_VOLUME_TO_MAX_RPM.keys()):
+            raise ValueError(f"Syringe volume ({syringe_volume_ul} [uL])is invalid "
+                "and must be one of the following values: "
                 f"{list(self.__class__.SYRINGE_VOLUME_TO_MAX_RPM.keys())}.")
         self.syringe_volume_ul = syringe_volume_ul
         # Connect to port.
