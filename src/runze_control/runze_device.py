@@ -15,6 +15,9 @@ class RunzeDevice:
 
     DEFAULT_TIMEOUT_S = 0.25  # Default communication timeout in seconds.
     LONG_TIMEOUT_S = 30.0  # Default communication timeout in seconds.
+                           # This needs to be a bit long since some device
+                           # behavior (syringes moving) take several seconds
+                           # to complete before issuing their reply.
     VALID_BAUDRATES = \
     {
         Protocol.DT: [9600, 38400],
@@ -42,8 +45,11 @@ class RunzeDevice:
         self.address = address
         self.protocol = Protocol(protocol)
         self.ser = None
-        self.log = logging.getLogger(f"{__name__}.{com_port}")
-        self.cmd_send_time_s = None
+        logger_name = self.__class__.__name__ + (f".{com_port}")
+        self.log = logging.getLogger(logger_name)
+        self.cmd_send_time_s = None # Time last command was sent to the device
+                                    # before reply was received or None if no
+                                    # issued command is waiting for a reply.
         # if baudrate is unspecified, try all of them before giving up.
         baudrates = [baudrate] if baudrate is not None \
                     else RunzeDevice.VALID_BAUDRATES[self.protocol]
@@ -138,11 +144,12 @@ class RunzeDevice:
         # strictly waiting for a command to complete.
         if self.cmd_send_time_s is None:
             return False
+        # Check if the last command we sent has issued a reply. Don't block.
         reply = self._parse_runze_reply(self._get_reply(protocol=self.protocol,
                                                         wait=False))
-        if reply is not None:
-            return False  # Command finished and replied.
-        return True
+        if reply is None:
+            return True # No reply has been received yet.
+        return False
 
     def wait_for_reply(self, force: bool = False):
         return self._parse_runze_reply(self._get_reply(protocol=self.protocol,
@@ -232,11 +239,11 @@ class RunzeDevice:
         if not len(reply):
             return None
         reply_struct = struct.unpack(runze_codes.PacketFormat.Reply, reply)
-        reply = dict(zip(runze_codes.CommonReplyFields, reply_struct))
-        error = runze_codes.ReplyStatus(reply['status'])
+        parsed_reply = dict(zip(runze_codes.CommonReplyFields, reply_struct))
+        error = runze_codes.ReplyStatus(parsed_reply['status'])
         if error != runze_codes.ReplyStatus.NormalState:
             raise RuntimeError(f"Device replied with error code: {error.name}.")
-        return reply
+        return parsed_reply
 
     def _send(self, packet: bytes, protocol: Protocol = Protocol.DT,
               wait: bool = True, force: bool = False):
@@ -248,6 +255,7 @@ class RunzeDevice:
         self.ser.write(packet)
         self.cmd_send_time_s = perf_counter()
         if not wait:
+            self.log.debug("Not waiting for reply from device.")
             return bytes() # Empty reply
         # Every command issues a reply. Get it.
         reply = self._get_reply(protocol, wait)
@@ -267,6 +275,7 @@ class RunzeDevice:
                                   "No command has been issued.")
         reply = bytes()
         while True:
+            # Timeout is zero, so these calls return immediately if no reply.
             try:
                 if protocol == Protocol.RUNZE:
                     reply += self.ser.read(runze_codes.REPLY_NUM_BYTES)
@@ -283,6 +292,7 @@ class RunzeDevice:
             if perf_counter() - self.cmd_send_time_s >= self.__class__.LONG_TIMEOUT_S:
                 break
         self.log.debug(f"Reply (hex): {reply.hex(' ')}")
-        self.cmd_send_time_s = None
+        if len(reply):
+            self.cmd_send_time_s = None # Cmd-reply loop finished. Unassign.
         return reply
 

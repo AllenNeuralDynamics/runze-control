@@ -89,7 +89,7 @@ class SY08(RunzeDevice):
            but enables volume and port-centric methods, rather than methods
            that rely on the number of encoder steps.
         """
-        if (syringe_volume_ul is not None 
+        if (syringe_volume_ul is not None
             and syringe_volume_ul not in self.__class__.SYRINGE_VOLUME_TO_MAX_RPM.keys()):
             raise ValueError(f"Syringe volume ({syringe_volume_ul} [uL])is invalid "
                 "and must be one of the following values: "
@@ -148,7 +148,8 @@ class SY08(RunzeDevice):
         return self.force_stop()
 
     def get_motor_status(self):
-        return self._send_common_cmd(sy08_codes.CommonCmdCode.GetMotorStatus)
+        reply = self._send_common_cmd(sy08_codes.CommonCmdCode.GetMotorStatus)
+        return reply['parameter']
 
     def is_busy(self):
         # Check if we are waiting on replies.
