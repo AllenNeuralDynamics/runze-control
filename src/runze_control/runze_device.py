@@ -14,7 +14,7 @@ class RunzeDevice:
     """Generic Runze Fluid Serial Device."""
 
     DEFAULT_TIMEOUT_S = 0.25  # Default communication timeout in seconds.
-    LONG_TIMEOUT_S = 30.0  # Default communication timeout in seconds.
+    LONG_TIMEOUT_S = 60.0  # Default communication timeout in seconds.
                            # This needs to be a bit long since some device
                            # behavior (syringes moving) take several seconds
                            # to complete before issuing their reply.

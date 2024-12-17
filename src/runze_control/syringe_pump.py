@@ -94,6 +94,7 @@ class SY08(RunzeDevice):
             raise ValueError(f"Syringe volume ({syringe_volume_ul} [uL])is invalid "
                 "and must be one of the following values: "
                 f"{list(self.__class__.SYRINGE_VOLUME_TO_MAX_RPM.keys())}.")
+        self.max_speed_rpm = self.__class__.SYRINGE_VOLUME_TO_MAX_RPM[syringe_volume_ul]
         self.syringe_volume_ul = syringe_volume_ul
         # Connect to port.
         super().__init__(com_port=com_port, baudrate=baudrate,
@@ -160,6 +161,18 @@ class SY08(RunzeDevice):
         if motor_status == ReplyStatus.MotorBusy:
             return True
         return False
+
+    def set_speed_percent(self, percent: float, wait: bool = True):
+        """Set speed in percent."""
+        if (percent > 100) or (percent < 0):
+            raise ValueError(f"Requested plunger speed ({percent}%) is out of "
+                             f"range [0 - 100].")
+        rpm_per_percent = self.max_speed_rpm / 100.0
+        speed_rpm = round(percent * rpm_per_percent)
+        self.log.debug(f"Setting motor speed to {percent}% "
+                       f"(i.e: {speed_rpm}[rpm]).")
+        self._send_common_cmd(sy08_codes.CommonCmdCode.SetDynamicSpeed,
+                              speed_rpm, wait)
 
     def get_remaining_capacity_ul(self):
         """return the remaining syringe capacity."""
