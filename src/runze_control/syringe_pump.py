@@ -70,6 +70,7 @@ class SY01B(RunzeDevice):
 class SY08(RunzeDevice):
     """Syringe Pump."""
 
+    DEFAULT_SPEED_PERCENT = 60 # Power-on-reset startup speed.
     SYRINGE_VOLUME_TO_MAX_RPM = \
     {
         5000: 600, # 5mL syringe volume max rpm
@@ -102,6 +103,10 @@ class SY08(RunzeDevice):
 
     def reset_syringe_position(self, wait: bool = True):
         """Reset and home the syringe."""
+        self.log.debug("Requesting default speed. If device is freshly "
+            "powered on, speed change will not take place until after the "
+            "first reset.")
+        self.set_speed_percent(self.__class__.DEFAULT_SPEED_PERCENT)
         self.log.debug(f"Resetting syringe to 0[uL] position.")
         reply = self._send_query(sy08_codes.CommonCmdCode.Reset)
         return reply['parameter']
@@ -121,15 +126,18 @@ class SY08(RunzeDevice):
     # TODO: in theory, we could track how many times we could aspirate based on
     #   current position.
     def aspirate(self, microliters: float, wait: bool = True):
+        """Relative plunger move to withdraw the specified number of microliters."""
         steps_per_ul = self.__class__.MAX_POSITION_STEPS / self.syringe_volume_ul
         steps = round(microliters * steps_per_ul)
         self.log.debug(f"Aspirating {microliters}[uL] (i.e: {steps} [steps]).")
         self._send_common_cmd(sy08_codes.CommonCmdCode.RunInCCW, steps, wait)
 
     def withdraw(self, microliters: float, wait: bool = True):
+        """Relative plunger move to withdraw the specified number of microliters."""
         return self.aspirate(microliters, wait)
 
     def dispense(self, microliters: float, wait: bool = True):
+        """Relative plunger move to dispense the specified number of microliters."""
         steps_per_ul = self.__class__.MAX_POSITION_STEPS / self.syringe_volume_ul
         steps = round(microliters * steps_per_ul)
         self.log.debug(f"Dispensing {microliters}[uL] (i.e: {steps} [steps]).")
@@ -164,6 +172,7 @@ class SY08(RunzeDevice):
 
     def set_speed_percent(self, percent: float, wait: bool = True):
         """Set speed in percent."""
+        self.log.debug(f"Setting speed to {percent}%.")
         if (percent > 100) or (percent < 0):
             raise ValueError(f"Requested plunger speed ({percent}%) is out of "
                              f"range [0 - 100].")

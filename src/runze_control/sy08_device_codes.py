@@ -23,7 +23,7 @@ class CommonCmdCode(IntEnum):
     RunInCW = 0x42 # Dispense. (i.e: move relative)
     # FIXME: 0x4D is query valve status on SY03 multiport syringe pumps and
     # aspirate on SY08 pumps:
-    RunInCCW = 0x4D # Aspirate (i.e: move relative) 
+    RunInCCW = 0x4D # Aspirate (i.e: move relative)
     Reset = 0x45
     ForcedReset = 0x4F
     SetDynamicSpeed = 0x4B

@@ -24,7 +24,11 @@ class RunzeDevice:
         Protocol.RUNZE: [9600, 19200, 38400, 57600, 115200]
     }
 
-    def __init__(self, com_port: str, baudrate: int = None, address: int = 0x31,
+    RUNZE_DEFAULT_ADDRESS = 0x00 # max: 127 (128 devices).
+    ASCII_DEFAULT_ADDRESS = 0x31 # ASCII: '0' max: 0x3F (16 devices).
+
+    def __init__(self, com_port: str, baudrate: int = None,
+                 address: Union[int, str] = 0x00,
                  protocol: Union[str, Protocol] = Protocol.RUNZE):
         """Init. Connect to a device with the specified address via an
            RS232 or RS485 interface.
@@ -34,9 +38,11 @@ class RunzeDevice:
             changed to standard baud rates up through 115200bps via serial
             command.
         :param address: specify the device to connect to.
-            Note: only useable in an RS485 multidrop setup.
+            Note: only practical in an RS485 multidrop setup.
+            Note: Runze and ASCII protocols have distinct valid addresses and
+                address ranges.
             Note: external rotary switch position 0 corresponds to device 1 at
-                address 0x31 (i.e: ascii '1').
+                Runze address 0 or ASCII address '1' (i.e: 0x31).
         :param protocol: protocol over which to send commands to the device
             ("RUNZE" or "DT" [aka: ASCII]). Protocol must match the one
             specified on the device, but it can be changed after connecting to
@@ -46,6 +52,7 @@ class RunzeDevice:
         self.protocol = Protocol(protocol)
         self.ser = None
         logger_name = self.__class__.__name__ + (f".{com_port}")
+        self._timeout_s = self.__class__.DEFAULT_TIMEOUT_S
         self.log = logging.getLogger(logger_name)
         self.cmd_send_time_s = None # Time last command was sent to the device
                                     # before reply was received or None if no
@@ -58,7 +65,8 @@ class RunzeDevice:
             for br in baudrates:
                 try:
                     self.log.debug(f"Connecting to device on port: {com_port} "
-                                   f"at {br}[bps] on address: '{address}'.")
+                        f"at {br}[bps] on address: {address} "
+                        f"(hex: 0x{address:02x}, ascii: '{chr(address)}').")
                     # We will manually apply the timeout in the _send method.
                     self.ser = Serial(com_port, br, timeout=0)
                     self.ser.reset_input_buffer()
@@ -81,6 +89,8 @@ class RunzeDevice:
             logging.error("Error: could not open connection to device. "
                 "Is it plugged in and powered up? Is another program using it?")
             raise
+        # Restore long timeout (required for long syringe moves.)
+        self._timeout_s = self.__class__.LONG_TIMEOUT_S
 
     def init(self):
         # Send protocol-specific handshake.
@@ -289,7 +299,7 @@ class RunzeDevice:
                 pass
             if len(reply) or not wait:
                 break
-            if perf_counter() - self.cmd_send_time_s >= self.__class__.LONG_TIMEOUT_S:
+            if perf_counter() - self.cmd_send_time_s >= self._timeout_s:
                 break
         self.log.debug(f"Reply (hex): {reply.hex(' ')}")
         if len(reply):
