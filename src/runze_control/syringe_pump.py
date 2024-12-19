@@ -97,6 +97,7 @@ class SY08(RunzeDevice):
                 f"{list(self.__class__.SYRINGE_VOLUME_TO_MAX_RPM.keys())}.")
         self.max_speed_rpm = self.__class__.SYRINGE_VOLUME_TO_MAX_RPM[syringe_volume_ul]
         self.syringe_volume_ul = syringe_volume_ul
+        self.syringe_speed_percent = None
         # Connect to port.
         super().__init__(com_port=com_port, baudrate=baudrate,
                          address=address, protocol=protocol)
@@ -104,7 +105,7 @@ class SY08(RunzeDevice):
     def reset_syringe_position(self, wait: bool = True):
         """Reset and home the syringe."""
         self.log.debug("Requesting default speed. If device is freshly "
-            "powered on, speed change will not take place until after the "
+            "powered on, the speed change will not take place until after the "
             "first reset.")
         self.set_speed_percent(self.__class__.DEFAULT_SPEED_PERCENT)
         self.log.debug(f"Resetting syringe to 0[uL] position.")
@@ -182,6 +183,12 @@ class SY08(RunzeDevice):
                        f"(i.e: {speed_rpm}[rpm]).")
         self._send_common_cmd(sy08_codes.CommonCmdCode.SetDynamicSpeed,
                               speed_rpm, wait)
+        self.syringe_speed_percent = percent # If no errors, save for getter fn.
+
+    def get_speed_percent(self):
+        """Return the current speed in percent.
+            Note: this value is local and not read directly from the device."""
+        return self.syringe_speed_percent
 
     def get_remaining_capacity_ul(self):
         """return the remaining syringe capacity."""
