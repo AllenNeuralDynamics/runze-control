@@ -9,12 +9,14 @@ To install this package from the Github in editable mode, from this directory in
 
 To install this package in editable mode and build the docs locally, invoke: `pip install -e .[dev]`
 
-
 ## Supported Devices:
-* Multiport Selector Valve **In Progress**
-    * QHF-SV07 series datasheet [pdf](https://www.runzefluid.com/uploads/file/sv-07-multiport-selector-valve-manual-v1-4.pdf)
-* Syringe Pump **In Progress**
-    * ZSB-SY01B series datasheet [1.0 pdf](https://www.runzefluid.com/uploads/file/sy-01b-user's-manual-v1-0.pdf), [1.1 pdf](https://www.runzefluid.com/uploads/file/sy-01b-ascii-code-instruction-manuall-v1-1.pdf)
+| Device    | Description               | Runze Protocol | ASCII Protocol | Webpage                                                                          |
+|-----------|---------------------------|----------------|----------------|----------------------------------------------------------------------------------|
+| SY08      | syringe pump              | yes            | in progress    | [SY08](https://www.runzefluid.com/products/Syringe%20Pump-sy-08.html)            |
+| ZSB-SY01B | multichannel syringe pump | in progress    | no             | [ZSB-SY01B](https://www.runzefluid.com/products/multi-channel-syringe-pump.html) |
+|           |                           |                |                |                                                                                  |
+
+More devices to come!
 
 
 ## Getting Started
