@@ -13,7 +13,7 @@ To install this package in editable mode and build the docs locally, invoke: `pi
 | Device    | Description               | Runze Protocol | ASCII Protocol | Webpage                                                                               |
 |-----------|---------------------------|----------------|----------------|---------------------------------------------------------------------------------------|
 | SY08      | syringe pump              | yes            | in progress    | [SY08](https://www.runzefluid.com/products/Syringe%20Pump-sy-08.html)                 |
-| Mini-SY04 | syringe pump              | in progress    | no             | [Mini-SY04](https://www.runzefluid.com/uploads/file/mini-sy-04-syringe-pump-v2-3.pdf) |
+| Mini-SY04 | syringe pump              | in progress    | no             | [Mini-SY04](https://www.runzefluid.com/products/programmable-syringe-pump.html) |
 | ZSB-SY01B | multichannel syringe pump | in progress    | no             | [ZSB-SY01B](https://www.runzefluid.com/products/multi-channel-syringe-pump.html)      |
 |           |                           |                |                |                                                                                       |
 
