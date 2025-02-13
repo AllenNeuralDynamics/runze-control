@@ -42,5 +42,5 @@ syringe_pump.withdraw(10)
 print(f"Dispensing 10uL")
 syringe_pump.dispense(10)
 
-print(f"Syringe position is now: {syringe_pump.get_position()}")
+print(f"Syringe position is now: {syringe_pump.get_position_steps()}")
 #syringe_pump.move_absolute_in_percent(0)
