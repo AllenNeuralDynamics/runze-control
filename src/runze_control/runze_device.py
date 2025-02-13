@@ -1,7 +1,7 @@
 """Syringe Pump Driver."""
 from serial import Serial, SerialException
-from runze_control.common_device_codes import *
-from runze_control import runze_protocol_codes as runze_codes
+from runze_control.protocol import *
+from runze_control import runze_protocol as runze_codes
 from runze_control import dt_protocol_codes as dt_codes
 from typing import Union
 from functools import reduce, wraps
@@ -117,7 +117,7 @@ class RunzeDevice:
     def get_address(self):
         self.log.debug("Requesting address.")
         if self.protocol == Protocol.RUNZE:
-            reply = self._send_query(runze_codes.CommonCmdCode.GetAddress)
+            reply = self._send_query(runze_codes.CommonCmd.GetAddress)
             return reply['parameter']
         elif self.protocol == Protocol.DT:
             raise NotImplementedError
@@ -137,11 +137,11 @@ class RunzeDevice:
         pass
 
     def get_rs232_baudrate(self):
-        reply = self._send_query(runze_codes.CommonCmdCode.GetRS232Baudrate)
+        reply = self._send_query(runze_codes.CommonCmd.GetRS232Baudrate)
         return runze_codes.RS232BaudrateReply[reply['parameter']]
 
     def get_rs485_baudrate(self):
-        reply = self._send_query(runze_codes.CommonCmdCode.GetRS485Baudrate)
+        reply = self._send_query(runze_codes.CommonCmd.GetRS485Baudrate)
         return runze_codes.RS485BaudrateReply[reply['parameter']]
 
     def get_can_baudrate(self):
@@ -198,13 +198,13 @@ class RunzeDevice:
     # Runze Protocol cmds are made available through:
     # _send_common_cmd, _send_query, _send_factory_cmd
     # FIXME: child class should override the type hint for func.
-    def _send_common_cmd(self, func: Union[runze_codes.CommonCmdCode, int],
+    def _send_common_cmd(self, func: Union[runze_codes.CommonCmd, int],
                          param_value: int = 0, wait: bool = True,
                          force: bool = False):
         b3, b4 = param_value.to_bytes(2, 'little')
         return self._send_common_cmd_raw(func, b3, b4, wait, force)
 
-    def _send_common_cmd_raw(self, func: Union[runze_codes.CommonCmdCode, int],
+    def _send_common_cmd_raw(self, func: Union[runze_codes.CommonCmd, int],
                              b3: int, b4: int, wait: bool = True,
                              force: bool = False):
         """Send a common command frame to issue a command over Runze Protocol.
@@ -220,14 +220,14 @@ class RunzeDevice:
                                                   wait=wait,
                                                   force=force))
 
-    def _send_query(self, func: Union[runze_codes.CommonCmdCode, int],
+    def _send_query(self, func: Union[runze_codes.CommonCmd, int],
                     param_value: int = 0x0000, wait: bool = True,
                     force: bool = False):
         """Send a query and return the reply."""
         b3, b4 = param_value.to_bytes(2, 'little')
         return self._send_common_cmd_raw(func, b3, b4, wait, force)
 
-    def _send_factory_cmd(self, func: Union[runze_codes.FactoryCmdCode, int],
+    def _send_factory_cmd(self, func: Union[runze_codes.FactoryCmd, int],
                           param_value, wait: bool = True, force: bool = False):
         """Send a factory command frame to issue a command over Runze Protocol.
            Return a reply frame as a dict."""

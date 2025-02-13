@@ -24,14 +24,14 @@ class PacketFields(IntEnum):
 # Runze Protocol Fields
 CommonReplyFields = ('stx', 'addr', 'status', 'parameter', 'etx', 'checksum')
 
-class CommonCmdCode(IntEnum):
+class CommonCmd(IntEnum):
     GetAddress = 0x20
     GetRS232Baudrate = 0x21
     GetRS485Baudrate = 0x22
     GetCanBaudRate = 0x23
 
 
-class FactoryCmdCode(IntEnum):
+class FactoryCmd(IntEnum):
     """Codes for specifying the states of various calibration settings."""
     Address = 0x00
     RS232Baudrate = 0x01

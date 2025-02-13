@@ -1,10 +1,13 @@
-"""Syringe pump device codes."""
+"""Shared syringe pump device codes."""
 from enum import IntEnum
+from itertools import chain
+from runze_control.runze_protocol import CommonCmd as RunzeCommonCmd
 
 
-class CommonCmdCode(IntEnum):
-    """Codes to issue when querying/specifying the states of various settings
-       via a Common Command frame. Codes common to all devices are part of
+class SyringePumpCommonCmd(IntEnum):
+    """Runze Protocol codes shared between syringe pumps to issue
+       when querying/specifying the states of various settings via a
+       Common Command frame. Codes common to all devices are part of
         runze_protocol_codes.CommonCmdCode"""
     # Queries
     GetSubdivision = 0x25   # microstep subdivision?
@@ -27,5 +30,11 @@ class CommonCmdCode(IntEnum):
     Reset = 0x45
     ForcedReset = 0x4F
     SetDynamicSpeed = 0x4B
-    MoveSyringeAbsolute = 0x4E # [0x0000 - 0x2EE0]
     ForceStop = 0x49
+    #FIXME: remove shared commands
+
+# Combine enums
+# https://stackoverflow.com/a/41807919/3312269
+
+CommonCmd = IntEnum('CommonCmd',
+                    [(i.name, i.value) for i in chain(RunzeCommonCmd, SyringePumpCommonCmd)])

@@ -1,19 +1,14 @@
 """Syringe pump device codes."""
 from enum import IntEnum
-
-VALVE_ENCODER_MAX_STEPS = 2048
-SYRINGE_ENCODER_MAX_STEPS = 6000
-MOTOR_MAX_SPEED = 1000
+from itertools import chain
+from runze_control.runze_protocol import CommonCmd as RunzeCommonCmd
 
 
-class CommonCmdCode(IntEnum):
+class SYO1CommonCmd(IntEnum):
     """Codes to issue when querying/specifying the states of various settings
        via a Common Command frame."""
     # Queries
-    #GetAddress = 0x20  # Get Device Address
-    #GetRS232BaudRate = 0x21
-    #GetRS485BaudRate = 0x22
-    #GetCANBaudRate = 0x23
+    # Cmds 0x20 - 0x23 come from RunzeCommonCmd
     GetPowerOnResetState = 0x2E
     GetCANDestinationAddress = 0x30
     GetMulticastChannel1Address = 0x70
@@ -46,3 +41,8 @@ class CommonCmdCode(IntEnum):
     GetSyringePosition = 0x66  # Get syringe pump address(?) TODO and possibly the position too?
     SyncSyringePumpPosition = 0x67  # TODO: what does this actually do?
 
+# Combine enums
+# https://stackoverflow.com/a/41807919/3312269
+
+CommonCmd = IntEnum('CommonCmd',
+                    [(i.name, i.value) for i in chain(RunzeCommonCmd, SYO1CommonCmd)])
