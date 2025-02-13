@@ -24,8 +24,7 @@ syringe_pump.reset_syringe_position()
 #logger.info(f"Changing speed.")
 syringe_pump.set_speed_percent(10)
 logger.info(f"Moving with new speed.")
-syringe_pump.move_absolute_in_percent(25) # wait = True
-sleep(1)
+syringe_pump.move_absolute_in_percent(5) # wait = True
 logger.info(f"Changing speed.")
 syringe_pump.set_speed_percent(60)
 logger.info(f"Moving with new speed.")

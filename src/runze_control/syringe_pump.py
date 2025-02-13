@@ -256,6 +256,10 @@ class MiniSY04(SyringePump):
         # compute a relative move from accumulated steps tracked in the driver.
         desired_steps = steps
         delta_steps = desired_steps - self.driver_steps
+        # Sending a 0-step command results in a ParameterError on the device.
+        if delta_steps == 0:
+            self.log.debug("Not sending a 0-step movement command to device.")
+            return
         if delta_steps > 0:
             self.withdraw_steps(delta_steps, wait=wait)
         else:
