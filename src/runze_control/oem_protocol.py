@@ -1,10 +1,7 @@
 """Runze Fluid device codes common across devices."""
-from enum import Enum, IntEnum
-try:
-    from enum import StrEnum  # a 3.11+ feature.
-except ImportError:
-    class StrEnum(str, Enum):
-        pass
+
+from enum import IntEnum
+
 
 class PacketFields(IntEnum):
     """OEM Protocol Packet Fields."""

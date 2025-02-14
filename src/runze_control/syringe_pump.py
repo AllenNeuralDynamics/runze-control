@@ -1,10 +1,11 @@
 """Syringe Pump Driver."""
-from runze_control.common_device_codes import *
-from runze_control.runze_protocol_codes  import ReplyStatus
+from runze_control.protocol import Protocol
+from runze_control.runze_protocol  import ReplyStatus
 from runze_control.runze_device import RunzeDevice
-from runze_control import runze_protocol_codes as runze_codes
-from runze_control import sy08_device_codes as sy08_codes
-from runze_control import sy01_device_codes as sy01_codes
+from runze_control import runze_protocol as runze_codes
+from runze_control.protocol_codes import syringe_pump_codes
+from runze_control.protocol_codes import sy08_codes
+from runze_control.protocol_codes import sy01_codes
 from typing import Union
 
 
@@ -27,7 +28,6 @@ class SY01B(RunzeDevice):
         """
         super().__init__(com_port=com_port, baudrate=baudrate,
                          address=address, protocol=protocol)
-        # FIXME: if port count is specified, check that it is valid.
         self.port_count = port_count
         self.syringe_volume_ul = syringe_volume_ul
 
@@ -35,7 +35,7 @@ class SY01B(RunzeDevice):
         """Move syringe pump to the start of travel and back off by a small
            amount."""
         if self.protocol == Protocol.RUNZE:
-            reply = self._send_query(runze_protocol.CommonCmdCode.ForcedReset)
+            reply = self._send_query_runze(sy01_codes.CommonCmd.ForcedReset)
             return reply['parameter']
         else:
             raise NotImplementedError
@@ -43,7 +43,7 @@ class SY01B(RunzeDevice):
     def reset_valve_position(self):
         self.log.debug("Resetting valve position.")
         if self.protocol == Protocol.RUNZE:
-            reply = self._send_query(sy01_codes.CommonCmdCode.ResetValvePosition)
+            reply = self._send_query_runze(sy01_codes.CommonCmd.ResetValvePosition)
             return reply['parameter']
         else:
             raise NotImplementedError
@@ -51,7 +51,7 @@ class SY01B(RunzeDevice):
     def reset_syringe_position(self):
         self.log.debug("Resetting syringe position.")
         if self.protocol == Protocol.RUNZE:
-            reply = self._send_query(sy01_codes.CommonCmdCode.ResetSyringePosition)
+            reply = self._send_query_runze(sy01_codes.CommonCmd.ResetSyringePosition)
             return reply['parameter']
         else:
             raise NotImplementedError
@@ -67,18 +67,11 @@ class SY01B(RunzeDevice):
         #self._send_query(sy_codes.MotorStatus)
 
 
-class SY08(RunzeDevice):
-    """Syringe Pump."""
+class SyringePump(RunzeDevice):
 
-    DEFAULT_SPEED_PERCENT = 60 # Power-on-reset startup speed.
-    SYRINGE_VOLUME_TO_MAX_RPM = \
-    {
-        5000: 600, # 5mL syringe volume max rpm
-        12500: 600, # 12.5mL syringe volume max rpm
-        25000: 500 # 25mL syringe volume max rpm
-    }
-    MAX_POSITION_STEPS = 12000 # Full stroke is the same regardless of syringe
-                               # model.
+    VALVE_ENCODER_MAX_STEPS = 2048
+    SYRINGE_ENCODER_MAX_STEPS = 6000
+    MOTOR_MAX_SPEED = 1000
 
     def __init__(self, com_port: str, baudrate: int = None,
                  address: int = 0x31,
@@ -96,8 +89,10 @@ class SY08(RunzeDevice):
                 "and must be one of the following values: "
                 f"{list(self.__class__.SYRINGE_VOLUME_TO_MAX_RPM.keys())}.")
         self.max_speed_rpm = self.__class__.SYRINGE_VOLUME_TO_MAX_RPM[syringe_volume_ul]
+        self.max_position_steps = self.__class__.MAX_POSITION_STEPS[syringe_volume_ul]
         self.syringe_volume_ul = syringe_volume_ul
         self.syringe_speed_percent = None
+        self.driver_steps = 0
         # Connect to port.
         super().__init__(com_port=com_port, baudrate=baudrate,
                          address=address, protocol=protocol)
@@ -108,30 +103,37 @@ class SY08(RunzeDevice):
             "powered on, the speed change will not take place until after the "
             "first reset.")
         self.set_speed_percent(self.__class__.DEFAULT_SPEED_PERCENT)
-        self.log.debug(f"Resetting syringe to 0[uL] position.")
-        reply = self._send_query(sy08_codes.CommonCmdCode.Reset)
-        return reply['parameter']
+        self.log.debug(f"Resetting syringe (moving to ~0 position).")
+        self._send_query_runze(syringe_pump_codes.CommonCmd.Reset)
+        # Per datasheet, after reset, the syringe needs to be told that the
+        # reset position is the 0 position.
+        self.log.debug(f"Synchronizing syringe position.")
+        self._send_query_runze(syringe_pump_codes.CommonCmd.SynchronizePistonPosition)
+        self.driver_steps = 0  # Reset local step count.
+        self.log.debug(f"Syringe reset.")
 
-    def get_position(self):
+    def get_position_steps(self):
         """return the syringe position in linear steps."""
-        reply = self._send_query(sy08_codes.CommonCmdCode.GetPistonPosition)
-        return reply['parameter']
+        reply = self._send_query_runze(syringe_pump_codes.CommonCmd.GetPistonPosition)
+        self.driver_steps = reply["parameter"]  # Update local step count.
+        range_percent = self.driver_steps / self.max_position_steps * 100.0
+        self.log.debug(f"Syringe position: {self.driver_steps}/"
+                       f"{self.max_position_steps} [steps] "
+                       f"i.e: {range_percent:.2f}% full-scale range.")
+        return self.driver_steps
 
     def get_position_ul(self):
-        return (self.get_position() * self.syringe_volume_ul
-                / self.__class__.MAX_POSITION_STEPS)
+        return (self.get_position_steps() * self.syringe_volume_ul
+                / self.max_position_steps)
 
     def get_position_percent(self):
-        return self.get_position() * 100.0 / self.__class__.MAX_POSITION_STEPS
+        return self.get_position_steps() * 100.0 / self.max_position_steps
 
-    # TODO: in theory, we could track how many times we could aspirate based on
-    #   current position.
     def aspirate(self, microliters: float, wait: bool = True):
         """Relative plunger move to withdraw the specified number of microliters."""
-        steps_per_ul = self.__class__.MAX_POSITION_STEPS / self.syringe_volume_ul
+        steps_per_ul = self.max_position_steps / self.syringe_volume_ul
         steps = round(microliters * steps_per_ul)
-        self.log.debug(f"Aspirating {microliters}[uL] (i.e: {steps} [steps]).")
-        self._send_common_cmd(sy08_codes.CommonCmdCode.RunInCCW, steps, wait)
+        self.aspirate_steps(steps, wait=wait)
 
     def withdraw(self, microliters: float, wait: bool = True):
         """Relative plunger move to withdraw the specified number of microliters."""
@@ -139,26 +141,38 @@ class SY08(RunzeDevice):
 
     def dispense(self, microliters: float, wait: bool = True):
         """Relative plunger move to dispense the specified number of microliters."""
-        steps_per_ul = self.__class__.MAX_POSITION_STEPS / self.syringe_volume_ul
+        steps_per_ul = self.max_position_steps / self.syringe_volume_ul
         steps = round(microliters * steps_per_ul)
-        self.log.debug(f"Dispensing {microliters}[uL] (i.e: {steps} [steps]).")
-        self._send_common_cmd(sy08_codes.CommonCmdCode.RunInCW, steps, wait)
+        self.dispense_steps(steps, wait=wait)
+
+    def aspirate_steps(self, steps: int, wait: bool = True):
+        ul = steps * self.syringe_volume_ul / self.max_position_steps
+        self.log.debug(f"Aspirating {ul:.2f} [uL] i.e {steps} [steps].")
+        self._send_common_cmd_runze(syringe_pump_codes.CommonCmd.RunInCCW, steps, wait)
+        self.driver_steps += steps
+
+    def withdraw_steps(self, steps: int, wait: bool = True):
+        return self.aspirate_steps(steps, wait=wait)
+
+    def dispense_steps(self, steps: int, wait: bool = True):
+        ul = steps * self.syringe_volume_ul / self.max_position_steps
+        self.log.debug(f"Dispensing {ul:.2f} [uL] i.e {steps} [steps].")
+        self._send_common_cmd_runze(syringe_pump_codes.CommonCmd.RunInCW, steps, wait)
+        self.driver_steps -= steps
 
     def force_stop(self):
         """Halt the syringe pump in its current location."""
         # Always send--even if prior cmd has not been received.
-        was_busy = super().is_busy() # Save whether we are waiting on a reply.
-        self._send_common_cmd(sy08_codes.CommonCmdCode.ForceStop, wait=True,
-                              force=True)
-        # Clear the irrelevant reply from the aborted command.
-        if was_busy:
-            self.wait_for_reply(force=True)
+        self._send_common_cmd_runze(syringe_pump_codes.CommonCmd.ForceStop,
+                                    wait=True, force=True)
+        # Update local step count.
+        self.get_position_steps()
 
     def halt(self):
         return self.force_stop()
 
     def get_motor_status(self):
-        reply = self._send_common_cmd(sy08_codes.CommonCmdCode.GetMotorStatus)
+        reply = self._send_common_cmd_runze(syringe_pump_codes.CommonCmd.GetMotorStatus)
         return reply['parameter']
 
     def is_busy(self):
@@ -181,8 +195,8 @@ class SY08(RunzeDevice):
         speed_rpm = round(percent * rpm_per_percent)
         self.log.debug(f"Setting motor speed to {percent}% "
                        f"(i.e: {speed_rpm}[rpm]).")
-        self._send_common_cmd(sy08_codes.CommonCmdCode.SetDynamicSpeed,
-                              speed_rpm, wait)
+        self._send_common_cmd_runze(syringe_pump_codes.CommonCmd.SetDynamicSpeed,
+                                    speed_rpm, wait)
         self.syringe_speed_percent = percent # If no errors, save for getter fn.
 
     def get_speed_percent(self):
@@ -195,20 +209,130 @@ class SY08(RunzeDevice):
         raise NotImplementedError
 
     def move_absolute_in_steps(self, steps: int, wait: bool = True):
-        if (steps > self.__class__.MAX_POSITION_STEPS) or (steps < 0):
-            raise ValueError(f"Requested plunger movement ({steps}) is out of "
-                             f"range [0 - self.__class__.MAX_POSITION_STEPS].")
-        self.log.debug(f"Absolute move to {steps}/"
-                       f"{self.__class__.MAX_POSITION_STEPS} [steps].")
-        self._send_common_cmd(sy08_codes.CommonCmdCode.MoveSyringeAbsolute,
-                              steps, wait)
+        raise NotImplementedError
 
     def move_absolute_in_percent(self, percent: float, wait: bool = True):
+        raise NotImplementedError
+
+
+class MiniSY04(SyringePump):
+    """Mini SY04 Syringe Pump"""
+
+    DEFAULT_SPEED_PERCENT = 60
+    SYRINGE_VOLUME_TO_MAX_RPM = \
+    {
+        5000: 300, # 5mL syringe volume max rpm
+        10000: 300, # 10mL syringe volume max rpm
+        20000: 250 # 25mL syringe volume max rpm
+    }
+
+    # Full Stroke depends on model.
+    MAX_POSITION_STEPS = \
+    {
+
+        5000: 12000,
+        10000: 9632,
+        20000: 9600
+    }
+
+    def __init__(self, com_port: str, baudrate: int = None,
+                 address: int = 0x31, syringe_volume_ul: int = None):
+        # Only RUNZE Protocol is supported for MiniSY04.
+        super().__init__(com_port=com_port, baudrate=baudrate,
+                         address=address, protocol=Protocol.RUNZE,
+                         syringe_volume_ul=syringe_volume_ul)
+
+    def move_absolute_in_steps(self, steps: int, wait: bool = True):
+        """Absolute move (in steps).
+
+        .. Note::
+           This feature is implemented in the software driver rather than
+           leveraging a feature on the device itself like the SY08.
+
+        """
+        if (steps > self.max_position_steps) or (steps < 0):
+            raise ValueError(f"Requested plunger movement ({steps}) is out of "
+                             f"range [0 - self.max_position_steps].")
+        # No "move-absolute" command exists for this device, so we need to
+        # compute a relative move from accumulated steps tracked in the driver.
+        desired_steps = steps
+        delta_steps = desired_steps - self.driver_steps
+        # Sending a 0-step command results in a ParameterError on the device.
+        if delta_steps == 0:
+            self.log.debug("Not sending a 0-step movement command to device.")
+            return
+        range_percent = steps/self.max_position_steps * 100.0
+        self.log.debug(f"Absolute move to {steps}/"
+                       f"{self.max_position_steps} [steps] "
+                       f"i.e: {range_percent:.2f}% full-scale range.")
+        if delta_steps > 0:
+            self.withdraw_steps(delta_steps, wait=wait)
+        else:
+            self.dispense_steps(abs(delta_steps), wait=wait)
+
+    def move_absolute_in_percent(self, percent: float, wait: bool = True):
+        """Absolute move (in percent)."""
         if (percent > 100) or (percent < 0):
             raise ValueError(f"Requested plunger movement ({percent}) "
                              "is out of range [0 - 100].")
-        steps = round(percent / 100.0 * self.__class__.MAX_POSITION_STEPS)
-        self.log.debug(f"Absolute move to {percent}% of full scale range "
-            f"(i.e: {steps}/{self.__class__.MAX_POSITION_STEPS} [steps]).")
-        self._send_common_cmd(sy08_codes.CommonCmdCode.MoveSyringeAbsolute,
-                              steps, wait)
+        steps = round(percent / 100.0 * self.max_position_steps)
+        self.move_absolute_in_steps(steps, wait=wait)
+
+
+class SY08(SyringePump):
+    """SY08 Syringe Pump."""
+
+    DEFAULT_SPEED_PERCENT = 60 # Power-on-reset startup speed.
+    SYRINGE_VOLUME_TO_MAX_RPM = \
+    {
+        5000: 600, # 5mL syringe volume max rpm
+        12500: 600, # 12.5mL syringe volume max rpm
+        25000: 500 # 25mL syringe volume max rpm
+    }
+
+    # Full stroke is the same regardless of syringe model.
+    MAX_POSITION_STEPS = \
+    {
+        5000: 12000,
+        12500: 12000,
+        25000: 12000
+    }
+
+    def force_stop(self):
+        """Halt the syringe pump in its current location."""
+        # SY08 leaves a residual reply that needs to be cleared if we are
+        # halting an active movement command.
+        was_busy = super().is_busy()  # Save whether we are waiting on a reply.
+        self._send_common_cmd_runze(syringe_pump_codes.CommonCmd.ForceStop,
+                                    wait=True, force=True)
+        # Clear the irrelevant reply from the aborted command.
+        if was_busy:
+            self.wait_for_reply(force=True)
+        # Update local step count.
+        self.get_position_steps()
+
+    def move_absolute_in_steps(self, steps: int, wait: bool = True):
+        """Absolute move (in steps)."""
+        if (steps > self.max_position_steps) or (steps < 0):
+            raise ValueError(f"Requested plunger movement ({steps}) is out of "
+                             f"range [0 - self.max_position_steps].")
+        range_percent = steps/self.max_position_steps * 100.0
+        self.log.debug(f"Absolute move to {steps}/"
+                       f"{self.max_position_steps} [steps] "
+                       f"i.e: {range_percent:.2f}% full-scale range.")
+        self._send_common_cmd_runze(sy08_codes.CommonCmd.MoveSyringeAbsolute,
+                                    steps, wait)
+        self.driver_steps = steps
+
+    def move_absolute_in_percent(self, percent: float, wait: bool = True):
+        """Absolute move (in percent)."""
+        if (percent > 100) or (percent < 0):
+            raise ValueError(f"Requested plunger movement ({percent}) "
+                             "is out of range [0 - 100].")
+        steps = round(percent / 100.0 * self.max_position_steps)
+        self.log.debug(f"Absolute move to {steps}/"
+                       f"{self.max_position_steps} [steps] "
+                       f"i.e: {percent:.2f}% full-scale range.")
+        self._send_common_cmd_runze(sy08_codes.CommonCmd.MoveSyringeAbsolute,
+                                    steps, wait)
+        self.driver_steps = steps

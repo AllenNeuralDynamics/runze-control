@@ -18,9 +18,6 @@ logger.handlers[-1].setFormatter(
 COM_PORT = "/dev/ttyUSB0"
 
 # Connect to a single pump.
-#syringe_pump = SY01B(COM_PORT, baudrate=9600, address=0x31)
-#syringe_pump = SY08(COM_PORT, address=0x20)
-#syringe_pump = SY08(COM_PORT, address=0x31)
 syringe_pump = SY08(COM_PORT, address=0x00, syringe_volume_ul=25000)
 
 logger.info(f"Syringe address: {syringe_pump.get_address()}")
@@ -39,9 +36,10 @@ logger.info(f"is syringe busy? -> {'yes' if syringe_pump.is_busy() else 'no'}")
 sleep(0.25)
 logger.info("Halting.")
 syringe_pump.halt()
-logger.info(f"Syringe position: {syringe_pump.get_position_ul()} [uL]")
+logger.info(f"Syringe position: {syringe_pump.get_position_percent()}%")
+logger.info(f"Syringe position: {syringe_pump.get_position_percent()}%")
 sleep(1.0)
 logger.info(f"Resuming movement.")
-syringe_pump.move_absolute_in_percent(15)
-logger.info(f"Syringe position: {syringe_pump.get_position_ul()} [uL]")
+syringe_pump.move_absolute_in_percent(15, wait=True)
+logger.info(f"Syringe position: {syringe_pump.get_position_percent()}%")
 logger.info(f"Syringe position: {syringe_pump.get_position_percent()}%")
