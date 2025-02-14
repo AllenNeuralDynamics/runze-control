@@ -116,6 +116,10 @@ class SyringePump(RunzeDevice):
         """return the syringe position in linear steps."""
         reply = self._send_query_runze(syringe_pump_codes.CommonCmd.GetPistonPosition)
         self.driver_steps = reply["parameter"]  # Update local step count.
+        range_percent = self.driver_steps / self.max_position_steps * 100.0
+        self.log.debug(f"Syringe position: {self.driver_steps}/"
+                       f"{self.max_position_steps} [steps] "
+                       f"i.e: {range_percent:.2f}% full-scale range.")
         return self.driver_steps
 
     def get_position_ul(self):
@@ -142,7 +146,8 @@ class SyringePump(RunzeDevice):
         self.dispense_steps(steps, wait=wait)
 
     def aspirate_steps(self, steps: int, wait: bool = True):
-        self.log.debug(f"Aspirating {steps} [steps].")
+        ul = steps * self.syringe_volume_ul / self.max_position_steps
+        self.log.debug(f"Aspirating {ul:.2f} [uL] i.e {steps} [steps].")
         self._send_common_cmd_runze(syringe_pump_codes.CommonCmd.RunInCCW, steps, wait)
         self.driver_steps += steps
 
@@ -150,7 +155,8 @@ class SyringePump(RunzeDevice):
         return self.aspirate_steps(steps, wait=wait)
 
     def dispense_steps(self, steps: int, wait: bool = True):
-        self.log.debug(f"Dispensing {steps} [steps].")
+        ul = steps * self.syringe_volume_ul / self.max_position_steps
+        self.log.debug(f"Dispensing {ul:.2f} [uL] i.e {steps} [steps].")
         self._send_common_cmd_runze(syringe_pump_codes.CommonCmd.RunInCW, steps, wait)
         self.driver_steps -= steps
 
@@ -255,6 +261,10 @@ class MiniSY04(SyringePump):
         if delta_steps == 0:
             self.log.debug("Not sending a 0-step movement command to device.")
             return
+        range_percent = steps/self.max_position_steps * 100.0
+        self.log.debug(f"Absolute move to {steps}/"
+                       f"{self.max_position_steps} [steps] "
+                       f"i.e: {range_percent:.2f}% full-scale range.")
         if delta_steps > 0:
             self.withdraw_steps(delta_steps, wait=wait)
         else:
@@ -306,8 +316,10 @@ class SY08(SyringePump):
         if (steps > self.max_position_steps) or (steps < 0):
             raise ValueError(f"Requested plunger movement ({steps}) is out of "
                              f"range [0 - self.max_position_steps].")
+        range_percent = steps/self.max_position_steps * 100.0
         self.log.debug(f"Absolute move to {steps}/"
-                       f"{self.max_position_steps} [steps].")
+                       f"{self.max_position_steps} [steps] "
+                       f"i.e: {range_percent:.2f}% full-scale range.")
         self._send_common_cmd_runze(sy08_codes.CommonCmd.MoveSyringeAbsolute,
                                     steps, wait)
         self.driver_steps = steps
@@ -318,8 +330,9 @@ class SY08(SyringePump):
             raise ValueError(f"Requested plunger movement ({percent}) "
                              "is out of range [0 - 100].")
         steps = round(percent / 100.0 * self.max_position_steps)
-        self.log.debug(f"Absolute move to {percent}% of full scale range "
-                       f"(i.e: {steps}/{self.max_position_steps} [steps]).")
+        self.log.debug(f"Absolute move to {steps}/"
+                       f"{self.max_position_steps} [steps] "
+                       f"i.e: {percent:.2f}% full-scale range.")
         self._send_common_cmd_runze(sy08_codes.CommonCmd.MoveSyringeAbsolute,
                                     steps, wait)
         self.driver_steps = steps
