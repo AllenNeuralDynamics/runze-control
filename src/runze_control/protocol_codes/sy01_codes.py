@@ -4,7 +4,7 @@ from itertools import chain
 from runze_control.runze_protocol import CommonCmd as RunzeCommonCmd
 
 
-class SYO1CommonCmd(IntEnum):
+class SY01CommonCmd(IntEnum):
     """Codes to issue when querying/specifying the states of various settings
        via a Common Command frame."""
     # Queries
@@ -41,8 +41,8 @@ class SYO1CommonCmd(IntEnum):
     GetSyringePosition = 0x66  # Get syringe pump address(?) TODO and possibly the position too?
     SyncSyringePumpPosition = 0x67  # TODO: what does this actually do?
 
+
 # Combine enums
 # https://stackoverflow.com/a/41807919/3312269
-
 CommonCmd = IntEnum('CommonCmd',
-                    [(i.name, i.value) for i in chain(RunzeCommonCmd, SYO1CommonCmd)])
+                    [(i.name, i.value) for i in chain(RunzeCommonCmd, SY01CommonCmd)])

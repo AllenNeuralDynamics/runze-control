@@ -6,23 +6,27 @@ except ImportError:
     class StrEnum(str, Enum):
         pass
 
+
 # Create a custom enum that can also be interpreted as a bytes type.
 class BytesEnum(bytes, Enum):
     pass
 
+
 class Protocol(StrEnum):
     RUNZE = "RUNZE"
     OEM = "OEM"
-    DT = "DT" # aka: ASCII
+    DT = "DT"  # aka: ASCII
 
 
 REQUEST_PROTOCOL_MODE = b'\x91\xeb\x07\x00\x00\x00\x00\x00\x00\xd5(\xff\xf8'
+
 
 class ProtocolReply(BytesEnum):
     """Code issued from the device to indicate whether the device is in
     Runze or Ascii mode."""
     RUNZE = b'\x91\xeb\x02\x01\x00c\xd7\xf6\xab\x00'
     ASCII = b'\x91\xeb\x02\x01\x00c\xd7\xf6\xab\x00'
+
 
 class SetProtocol(BytesEnum):
     """Codes to change the device to Runze or Ascii mode.

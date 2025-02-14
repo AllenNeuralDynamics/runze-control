@@ -9,8 +9,8 @@ except ImportError:
 
 class PacketFields(StrEnum):
     """DT (i.e: ASCII) Protocol Packet Fields."""
-    FRAME_START = '/' # 0x2F
-    FRAME_END = '\r' # 0x0D
+    FRAME_START = '/'  # 0x2F
+    FRAME_END = '\r'  # 0x0D
     REPLY_FRAME_END = '\r\n'
 
 

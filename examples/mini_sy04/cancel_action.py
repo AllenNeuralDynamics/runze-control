@@ -4,7 +4,7 @@ import logging
 import pprint
 from time import sleep
 
-from runze_control.syringe_pump import SY08
+from runze_control.syringe_pump import MiniSY04
 
 # Uncomment for some prolific log statements.
 logger = logging.getLogger()
@@ -18,7 +18,7 @@ logger.handlers[-1].setFormatter(
 COM_PORT = "/dev/ttyUSB0"
 
 # Connect to a single pump.
-syringe_pump = SY08(COM_PORT, address=0x00, syringe_volume_ul=25000)
+syringe_pump = MiniSY04(COM_PORT, address=0x00, syringe_volume_ul=20000)
 
 logger.info(f"Syringe address: {syringe_pump.get_address()}")
 logger.info(f"Syringe baud rate: {syringe_pump.get_rs232_baudrate()}")
@@ -37,9 +37,7 @@ sleep(0.25)
 logger.info("Halting.")
 syringe_pump.halt()
 logger.info(f"Syringe position: {syringe_pump.get_position_percent()}%")
-logger.info(f"Syringe position: {syringe_pump.get_position_percent()}%")
 sleep(1.0)
 logger.info(f"Resuming movement.")
-syringe_pump.move_absolute_in_percent(15, wait=True)
-logger.info(f"Syringe position: {syringe_pump.get_position_percent()}%")
+syringe_pump.move_absolute_in_percent(15)
 logger.info(f"Syringe position: {syringe_pump.get_position_percent()}%")

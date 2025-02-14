@@ -1,5 +1,6 @@
 """Runze Fluid device codes common across devices."""
 from enum import Enum, IntEnum
+
 try:
     from enum import StrEnum  # a 3.11+ feature.
 except ImportError:
@@ -8,6 +9,7 @@ except ImportError:
 
 FACTORY_CMD_PWD_CODE = 0xFFEEBBAA  # Password for applying factory commands.
 REPLY_NUM_BYTES = 8
+
 
 class PacketFormat(StrEnum):
     SendCommon = "<BBBBBB" # little-endian, 6 uint8 (checksum omitted)
@@ -23,6 +25,7 @@ class PacketFields(IntEnum):
 
 # Runze Protocol Fields
 CommonReplyFields = ('stx', 'addr', 'status', 'parameter', 'etx', 'checksum')
+
 
 class CommonCmd(IntEnum):
     GetAddress = 0x20
