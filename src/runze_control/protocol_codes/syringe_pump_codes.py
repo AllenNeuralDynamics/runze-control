@@ -1,7 +1,7 @@
 """Shared syringe pump device codes."""
 from enum import IntEnum
 from itertools import chain
-from runze_control.runze_protocol import CommonCmd as RunzeCommonCmd
+from runze_control.protocol_codes.common_codes import CommonCmd as RunzeCommonCmd
 
 
 class SyringePumpCommonCmd(IntEnum):

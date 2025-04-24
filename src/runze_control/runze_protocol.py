@@ -27,31 +27,6 @@ class PacketFields(IntEnum):
 CommonReplyFields = ('stx', 'addr', 'status', 'parameter', 'etx', 'checksum')
 
 
-class CommonCmd(IntEnum):
-    GetAddress = 0x20
-    GetRS232Baudrate = 0x21
-    GetRS485Baudrate = 0x22
-    GetCanBaudRate = 0x23
-
-
-class FactoryCmd(IntEnum):
-    """Codes for specifying the states of various calibration settings."""
-    Address = 0x00
-    RS232Baudrate = 0x01
-    RS485Baudrate = 0x02
-    CANBaudrate = 0x03
-    PowerOnReset = 0x0E  # If set (B7=1), the valve will reset to an
-                         # interstitial position between port 1 and port N upon
-                         # power-up.
-    CANDestinationAddress = 0x10
-    MulticastCh1Address = 0x50
-    MulticastCh2Address = 0x51
-    MulticastCh3Address = 0x52
-    MulticastCh4Address = 0x53
-    ParameterLock = 0xFC
-    FactoryReset = 0xFF
-
-
 class ReplyStatus(IntEnum):
     """Reply codes for the STATUS (B2) field of a reply to a common command."""
     NormalState = 0x00

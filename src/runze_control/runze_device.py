@@ -1,12 +1,13 @@
 """Syringe Pump Driver."""
-from serial import Serial, SerialException
-from runze_control.protocol import *
-from runze_control import runze_protocol as runze_codes
-from runze_control.runze_protocol import FACTORY_CMD_PWD_CODE
-from runze_control import dt_protocol as dt_codes
-from runze_control import oem_protocol as oem_codes
-from typing import Union
 from functools import reduce, wraps
+from protocol_codes import common_codes
+from runze_control.protocol import *
+from runze_control.runze_protocol import FACTORY_CMD_PWD_CODE
+from runze_control import runze_protocol
+from runze_control import dt_protocol
+from runze_control import oem_protocol
+from serial import Serial, SerialException
+from typing import Union
 from time import perf_counter
 import logging
 import struct
@@ -56,6 +57,7 @@ class RunzeDevice:
         logger_name = self.__class__.__name__ + (f".{com_port}")
         self._timeout_s = self.__class__.DEFAULT_TIMEOUT_S
         self.log = logging.getLogger(logger_name)
+        self.codes = common_codes  # Can be overwritten in child class.
         self.cmd_send_time_s = None # Time last command was sent to the device
                                     # before reply was received or None if no
                                     # issued command is waiting for a reply.
@@ -100,8 +102,8 @@ class RunzeDevice:
             pass
         elif self.protocol == Protocol.DT:
             # /<address>Z<do it now>
-            cmd_str = str(dt_codes.Commands.InitClockwise) + "R"
-            self._send_dt_cmd(dt_codes.Commands.InitClockwise, execute=True)
+            cmd_str = str(dt_protocol.Commands.InitClockwise) + "R"
+            self._send_dt_cmd(dt_protocol.Commands.InitClockwise, execute=True)
 
     def get_protocol(self):
         """Get the protocol that the device is set to communicate in."""
@@ -119,7 +121,7 @@ class RunzeDevice:
     def get_address(self):
         self.log.debug("Requesting address.")
         if self.protocol == Protocol.RUNZE:
-            reply = self._send_query_runze(runze_codes.CommonCmd.GetAddress)
+            reply = self._send_query_runze(self.codes.CommonCmd.GetAddress)
             return reply['parameter']
         elif self.protocol == Protocol.DT:
             raise NotImplementedError
@@ -139,12 +141,12 @@ class RunzeDevice:
         pass
 
     def get_rs232_baudrate(self):
-        reply = self._send_query_runze(runze_codes.CommonCmd.GetRS232Baudrate)
-        return runze_codes.RS232BaudrateReply[reply['parameter']]
+        reply = self._send_query_runze(self.codes.CommonCmd.GetRS232Baudrate)
+        return runze_protocol.RS232BaudrateReply[reply['parameter']]
 
     def get_rs485_baudrate(self):
-        reply = self._send_query_runze(runze_codes.CommonCmd.GetRS485Baudrate)
-        return runze_codes.RS485BaudrateReply[reply['parameter']]
+        reply = self._send_query_runze(self.codes.CommonCmd.GetRS485Baudrate)
+        return runze_protocol.RS485BaudrateReply[reply['parameter']]
 
     def get_can_baudrate(self):
         raise NotImplementedError
@@ -173,12 +175,12 @@ class RunzeDevice:
         cmd_str_bin_encoding = "B"*len(cmd_str_bytes)
         encoding = f"<B{cmd_str_bin_encoding}B"
         cmd_bytes = struct.pack(encoding,
-                                dt_codes.PacketFields.FRAME_START,
+                                dt_protocol.PacketFields.FRAME_START,
                                 self.address.encode('ascii'),
                                 *cmd_str_bytes,
-                                dt_codes.PacketFields.FRAME_END)
+                                dt_protocol.PacketFields.FRAME_END)
         execute_cmd = "R" if execute else ""
-        packet = "{dt_codes.PacketFields.FRAME_START}{cmd_str}{execute_cmd}"
+        packet = "{dt_protocol.PacketFields.FRAME_START}{cmd_str}{execute_cmd}"
         return self._send(packet.encode("ASCII"), protocol=Protocol.DT)
 
     def _send_cmd_oem(self, cmd_str: str, execute: bool = True):
@@ -189,39 +191,39 @@ class RunzeDevice:
         cmd_str_bin_encoding = "B"*len(cmd_str_bytes)
         encoding = f"<B{cmd_str_bin_encoding}B"
         cmd_bytes = struct.pack(encoding,
-                                oem_codes.PacketFields.STX,
+                                oem_protocol.PacketFields.STX,
                                 self.address,
-                                oem_codes.PacketFields.DEFAULT_SEQUENCE_NUMBER
+                                oem_protocol.PacketFields.DEFAULT_SEQUENCE_NUMBER
                                 *cmd_str_bytes,
-                                oem_codes.PacketFields.ETX)
+                                oem_protocol.PacketFields.ETX)
         checksum = reduce(lambda a, b: a ^ b, cmd_bytes)  # XOR
         packet = cmd_bytes + checksum.to_bytes(1, 'little')
         return self._send(packet)
 
-    def _send_common_cmd_runze(self, func: Union[runze_codes.CommonCmd, int],
+    def _send_common_cmd_runze(self, func: Union[common_codes.CommonCmd, int],
                                param_value: int = 0, wait: bool = True,
                                force: bool = False):
         """Send a common command over Runze Protocol and return the reply."""
         b3, b4 = param_value.to_bytes(2, 'little')
         return self._send_common_cmd_frame_runze(func, b3, b4, wait, force)
 
-    def _send_query_runze(self, func: Union[runze_codes.CommonCmd, int],
+    def _send_query_runze(self, func: Union[common_codes.CommonCmd, int],
                           param_value: int = 0x0000, wait: bool = True,
                           force: bool = False):
         """Send a query over Runze Protocol and return the reply."""
         b3, b4 = param_value.to_bytes(2, 'little')
         return self._send_common_cmd_frame_runze(func, b3, b4, wait, force)
 
-    def _send_factory_cmd_runze(self, func: Union[runze_codes.FactoryCmd, int],
+    def _send_factory_cmd_runze(self, func: Union[common_codes.FactoryCmd, int],
                                 param_value, wait: bool = True, force: bool = False):
         """Send a factory command frame to issue a command over Runze Protocol.
            Return a reply frame as a dict."""
         # Pack Factory Command password in the appropriate location.
-        cmd_bytes = struct.pack(runze_codes.PacketFormat.SendFactory.value,
-                                runze_codes.PacketFields.STX,
+        cmd_bytes = struct.pack(runze_protocol.PacketFormat.SendFactory.value,
+                                runze_protocol.PacketFields.STX,
                                 self.address, func,
                                 FACTORY_CMD_PWD_CODE, param_value,
-                                runze_codes.PacketFields.ETX)
+                                runze_protocol.PacketFields.ETX)
         checksum = sum(bytearray(cmd_bytes))
         packet = cmd_bytes + checksum.to_bytes(2, 'little')
         return self._parse_runze_reply(self._send(packet,
@@ -229,15 +231,15 @@ class RunzeDevice:
                                                   wait=wait,
                                                   force=force))
 
-    def _send_common_cmd_frame_runze(self, func: Union[runze_codes.CommonCmd, int],
+    def _send_common_cmd_frame_runze(self, func: Union[common_codes.CommonCmd, int],
                                      b3: int, b4: int, wait: bool = True,
                                      force: bool = False):
         """Send a common command frame to issue a command over Runze Protocol.
            Return a reply frame as a dict."""
-        cmd_bytes = struct.pack(runze_codes.PacketFormat.SendCommon.value,
-                                runze_codes.PacketFields.STX,
+        cmd_bytes = struct.pack(runze_protocol.PacketFormat.SendCommon.value,
+                                runze_protocol.PacketFields.STX,
                                 self.address, func, b3, b4,
-                                runze_codes.PacketFields.ETX)
+                                runze_protocol.PacketFields.ETX)
         checksum = sum(bytearray(cmd_bytes))
         packet = cmd_bytes + checksum.to_bytes(2, 'little')
         return self._parse_runze_reply(self._send(packet,
@@ -250,10 +252,10 @@ class RunzeDevice:
         """Parse reply sent over Runze protocol into respective fields."""
         if not len(reply):
             return None
-        reply_struct = struct.unpack(runze_codes.PacketFormat.Reply, reply)
-        parsed_reply = dict(zip(runze_codes.CommonReplyFields, reply_struct))
-        error = runze_codes.ReplyStatus(parsed_reply['status'])
-        if error != runze_codes.ReplyStatus.NormalState:
+        reply_struct = struct.unpack(runze_protocol.PacketFormat.Reply, reply)
+        parsed_reply = dict(zip(runze_protocol.CommonReplyFields, reply_struct))
+        error = runze_protocol.ReplyStatus(parsed_reply['status'])
+        if error != runze_protocol.ReplyStatus.NormalState:
             raise RuntimeError(f"Device replied with error code: {error.name}.")
         return parsed_reply
 
@@ -290,10 +292,10 @@ class RunzeDevice:
             # Timeout is zero, so these calls return immediately if no reply.
             try:
                 if protocol == Protocol.RUNZE:
-                    reply += self.ser.read(runze_codes.REPLY_NUM_BYTES)
+                    reply += self.ser.read(runze_protocol.REPLY_NUM_BYTES)
                 elif protocol == Protocol.DT:
                     reply += self.ser.read_until(
-                        dt_codes.PacketFields.REPLY_FRAME_END.encode('ascii'))
+                        dt_protocol.PacketFields.REPLY_FRAME_END.encode('ascii'))
                 elif protocol == Protocol.OEM:
                     # check checksum.
                     raise NotImplementedError("OEM protocol not yet implemented.")

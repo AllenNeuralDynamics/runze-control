@@ -1,70 +1,10 @@
-"""Syringe Pump Driver."""
+"""Protocol codes common to all syringe pumps."""
 from runze_control.protocol import Protocol
-from runze_control.runze_protocol  import ReplyStatus
+from runze_control.runze_protocol import ReplyStatus
 from runze_control.runze_device import RunzeDevice
-from runze_control import runze_protocol as runze_codes
 from runze_control.protocol_codes import syringe_pump_codes
 from runze_control.protocol_codes import sy08_codes
-from runze_control.protocol_codes import sy01_codes
 from typing import Union
-
-
-class SY01B(RunzeDevice):
-    """Multi-Channel Syringe Pump."""
-
-    SYRINGE_MIN_POSITION_TICKS = 0x0000
-    SYRINGE_MAX_POSITION_TICKS = 0x1770
-    VALID_PORT_COUNT = [6, 9, 12]
-
-    def __init__(self, com_port: str, baudrate: int = None,
-                 address: int = 0x31,
-                 protocol: Union[str, Protocol] = Protocol.RUNZE,
-                 syringe_volume_ul: float = None, port_count: int = None):
-        """Init. Connect to a device with the specified address via an
-           RS232 interface.
-           `syringe_volume_ul` and `port_count` specifications are optional,
-           but enables volume and port-centric methods, rather than methods
-           that rely on the number of encoder steps.
-        """
-        super().__init__(com_port=com_port, baudrate=baudrate,
-                         address=address, protocol=protocol)
-        self.port_count = port_count
-        self.syringe_volume_ul = syringe_volume_ul
-
-    def forced_reset(self):
-        """Move syringe pump to the start of travel and back off by a small
-           amount."""
-        if self.protocol == Protocol.RUNZE:
-            reply = self._send_query_runze(sy01_codes.CommonCmd.ForcedReset)
-            return reply['parameter']
-        else:
-            raise NotImplementedError
-
-    def reset_valve_position(self):
-        self.log.debug("Resetting valve position.")
-        if self.protocol == Protocol.RUNZE:
-            reply = self._send_query_runze(sy01_codes.CommonCmd.ResetValvePosition)
-            return reply['parameter']
-        else:
-            raise NotImplementedError
-
-    def reset_syringe_position(self):
-        self.log.debug("Resetting syringe position.")
-        if self.protocol == Protocol.RUNZE:
-            reply = self._send_query_runze(sy01_codes.CommonCmd.ResetSyringePosition)
-            return reply['parameter']
-        else:
-            raise NotImplementedError
-
-    def move_valve_clockwise(self, steps):
-        raise NotImplementedError
-
-    def move_valve_counterclockwise(self, steps):
-        raise NotImplementedError
-
-    def select_port(self, port_num: int):
-        raise NotImplementedError
-        #self._send_query(sy_codes.MotorStatus)
 
 
 class SyringePump(RunzeDevice):
@@ -96,6 +36,10 @@ class SyringePump(RunzeDevice):
         # Connect to port.
         super().__init__(com_port=com_port, baudrate=baudrate,
                          address=address, protocol=protocol)
+        self.codes = syringe_pump_codes  # Assign self.codes after parent class
+                                         # constructor call so we can override
+                                         # self.codes if needed (i.e: if we
+                                         # added to them) and hold a superset.
 
     def reset_syringe_position(self, wait: bool = True):
         """Reset and home the syringe."""
@@ -104,17 +48,17 @@ class SyringePump(RunzeDevice):
             "first reset.")
         self.set_speed_percent(self.__class__.DEFAULT_SPEED_PERCENT)
         self.log.debug(f"Resetting syringe (moving to ~0 position).")
-        self._send_query_runze(syringe_pump_codes.CommonCmd.Reset)
+        self._send_query_runze(self.codes.CommonCmd.Reset)
         # Per datasheet, after reset, the syringe needs to be told that the
         # reset position is the 0 position.
         self.log.debug(f"Synchronizing syringe position.")
-        self._send_query_runze(syringe_pump_codes.CommonCmd.SynchronizePistonPosition)
+        self._send_query_runze(self.codes.CommonCmd.SynchronizePistonPosition)
         self.driver_steps = 0  # Reset local step count.
         self.log.debug(f"Syringe reset.")
 
     def get_position_steps(self):
         """return the syringe position in linear steps."""
-        reply = self._send_query_runze(syringe_pump_codes.CommonCmd.GetPistonPosition)
+        reply = self._send_query_runze(self.codes.CommonCmd.GetPistonPosition)
         self.driver_steps = reply["parameter"]  # Update local step count.
         range_percent = self.driver_steps / self.max_position_steps * 100.0
         self.log.debug(f"Syringe position: {self.driver_steps}/"
@@ -148,7 +92,7 @@ class SyringePump(RunzeDevice):
     def aspirate_steps(self, steps: int, wait: bool = True):
         ul = steps * self.syringe_volume_ul / self.max_position_steps
         self.log.debug(f"Aspirating {ul:.2f} [uL] i.e {steps} [steps].")
-        self._send_common_cmd_runze(syringe_pump_codes.CommonCmd.RunInCCW, steps, wait)
+        self._send_common_cmd_runze(self.codes.CommonCmd.RunInCCW, steps, wait)
         self.driver_steps += steps
 
     def withdraw_steps(self, steps: int, wait: bool = True):
@@ -157,13 +101,13 @@ class SyringePump(RunzeDevice):
     def dispense_steps(self, steps: int, wait: bool = True):
         ul = steps * self.syringe_volume_ul / self.max_position_steps
         self.log.debug(f"Dispensing {ul:.2f} [uL] i.e {steps} [steps].")
-        self._send_common_cmd_runze(syringe_pump_codes.CommonCmd.RunInCW, steps, wait)
+        self._send_common_cmd_runze(self.codes.CommonCmd.RunInCW, steps, wait)
         self.driver_steps -= steps
 
     def force_stop(self):
         """Halt the syringe pump in its current location."""
         # Always send--even if prior cmd has not been received.
-        self._send_common_cmd_runze(syringe_pump_codes.CommonCmd.ForceStop,
+        self._send_common_cmd_runze(self.codes.CommonCmd.ForceStop,
                                     wait=True, force=True)
         # Update local step count.
         self.get_position_steps()
@@ -172,7 +116,7 @@ class SyringePump(RunzeDevice):
         return self.force_stop()
 
     def get_motor_status(self):
-        reply = self._send_common_cmd_runze(syringe_pump_codes.CommonCmd.GetMotorStatus)
+        reply = self._send_common_cmd_runze(self.codes.CommonCmd.GetMotorStatus)
         return reply['parameter']
 
     def is_busy(self):
@@ -195,7 +139,7 @@ class SyringePump(RunzeDevice):
         speed_rpm = round(percent * rpm_per_percent)
         self.log.debug(f"Setting motor speed to {percent}% "
                        f"(i.e: {speed_rpm}[rpm]).")
-        self._send_common_cmd_runze(syringe_pump_codes.CommonCmd.SetDynamicSpeed,
+        self._send_common_cmd_runze(self.codes.CommonCmd.SetDynamicSpeed,
                                     speed_rpm, wait)
         self.syringe_speed_percent = percent # If no errors, save for getter fn.
 
@@ -303,7 +247,7 @@ class SY08(SyringePump):
         # SY08 leaves a residual reply that needs to be cleared if we are
         # halting an active movement command.
         was_busy = super().is_busy()  # Save whether we are waiting on a reply.
-        self._send_common_cmd_runze(syringe_pump_codes.CommonCmd.ForceStop,
+        self._send_common_cmd_runze(self.codes.CommonCmd.ForceStop,
                                     wait=True, force=True)
         # Clear the irrelevant reply from the aborted command.
         if was_busy:

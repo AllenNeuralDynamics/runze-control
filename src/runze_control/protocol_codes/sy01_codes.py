@@ -1,7 +1,7 @@
-"""Syringe pump device codes."""
+"""Protocol codes exclusive to SY01B multichannel Syringe Pumps."""
 from enum import IntEnum
 from itertools import chain
-from runze_control.runze_protocol import CommonCmd as RunzeCommonCmd
+from runze_control.protocol_codes.common_codes import CommonCmd as RunzeCommonCmd
 
 
 class SY01CommonCmd(IntEnum):
@@ -18,7 +18,7 @@ class SY01CommonCmd(IntEnum):
     GetCurrentChannelAddress = 0xAE
     GetCurrentVersion = 0x3F
     GetMotorStatus = 0x4A
-    GetValveStatus = 0x4D
+    GetValveStatus = 0x4D  # Note: Clashes with movement cmd for single channel syringe pump.
     # Commands
     MoveValveClockwiseMoveInSteps = 0x42  # Move valve clockwise a specified
                                           # number of encoder steps.
@@ -42,6 +42,9 @@ class SY01CommonCmd(IntEnum):
     SyncSyringePumpPosition = 0x67  # TODO: what does this actually do?
 
 
+# FIXME: we should be doing dict-like updates here so that later cmds with
+#   the same name overwrite the previous cmd since we are building these
+#   containers of codes general-to-specific.
 # Combine enums
 # https://stackoverflow.com/a/41807919/3312269
 CommonCmd = IntEnum('CommonCmd',
