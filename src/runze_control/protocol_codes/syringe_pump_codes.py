@@ -22,8 +22,8 @@ class SyringePumpCommonCmd(IntEnum):
     GetCurrentChannelPosition = 0x3E
     GetCurrentFirmwareVersion = 0x3F
     GetMotorStatus = 0x4A  # More of an "actuator" status depending on device.
-    GetPistonPosition = 0x66
-    SynchronizePistonPosition = 0x67
+    GetSyringePosition = 0x66
+    SynchronizeSyringePosition = 0x67  # This is a query?
     GetMulticastChannel1Address = 0x70
     GetMulticastChannel2Address = 0x71
     GetMulticastChannel3Address = 0x72
@@ -31,10 +31,10 @@ class SyringePumpCommonCmd(IntEnum):
     # Commands
     RunInCW = 0x42  # Dispense. (i.e: move relative)
     RunInCCW = 0x4D  # Aspirate (i.e: move relative)
-    Reset = 0x45
-    ForcedReset = 0x4F
-    SetDynamicSpeed = 0x4B
+    ResetSyringePosition = 0x45
     ForceStop = 0x49
+    SetDynamicSpeed = 0x4B
+    ForcedReset = 0x4F
 
 
 # Combine enums

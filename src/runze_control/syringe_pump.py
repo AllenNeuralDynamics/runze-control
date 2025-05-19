@@ -45,17 +45,17 @@ class SyringePump(RunzeDevice):
             "first reset.")
         self.set_speed_percent(self.__class__.DEFAULT_SPEED_PERCENT)
         self.log.debug(f"Resetting syringe (moving to ~0 position).")
-        self._send_query_runze(self.codes.CommonCmd.Reset)
+        self._send_query_runze(self.codes.CommonCmd.ResetSyringePosition)
         # Per datasheet, after reset, the syringe needs to be told that the
         # reset position is the 0 position.
         self.log.debug(f"Synchronizing syringe position.")
-        self._send_query_runze(self.codes.CommonCmd.SynchronizePistonPosition)
+        self._send_query_runze(self.codes.CommonCmd.SynchronizeSyringePosition)
         self.driver_steps = 0  # Reset local step count.
         self.log.debug(f"Syringe reset.")
 
     def get_position_steps(self):
         """return the syringe position in linear steps."""
-        reply = self._send_query_runze(self.codes.CommonCmd.GetPistonPosition)
+        reply = self._send_query_runze(self.codes.CommonCmd.GetSyringePosition)
         self.driver_steps = reply["parameter"]  # Update local step count.
         range_percent = self.driver_steps / self.max_position_steps * 100.0
         self.log.debug(f"Syringe position: {self.driver_steps}/"
