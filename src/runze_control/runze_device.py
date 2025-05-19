@@ -12,6 +12,8 @@ from time import perf_counter
 import logging
 import struct
 
+logger = logging.getLogger(__name__)
+
 
 def get_protocol(com_port: str, baudrate: int = 9600):
     ser = Serial(com_port, baudrate, timeout=0.1)
@@ -22,9 +24,11 @@ def get_protocol(com_port: str, baudrate: int = 9600):
 
 def set_protocol(com_port: str, baudrate: int = 9600,
                  protocol: Union[str, Protocol] = Protocol.RUNZE):
-    set_protocol_cmd = SetProtocol(Protocol(protocol).name)
+    set_protocol_cmd = SetProtocol[Protocol(protocol).name]
     ser = Serial(com_port, baudrate, timeout=0.1)
     ser.write(set_protocol_cmd)
+    logger.warning(f"Protocol changed to {protocol}. Device requires power "
+                   f"cycle for changes to take effect.")
 
 
 class RunzeDevice:
