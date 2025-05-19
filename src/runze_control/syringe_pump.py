@@ -9,14 +9,10 @@ from typing import Union
 
 class SyringePump(RunzeDevice):
 
-    VALVE_ENCODER_MAX_STEPS = 2048
-    SYRINGE_ENCODER_MAX_STEPS = 6000
-    MOTOR_MAX_SPEED = 1000
-
     def __init__(self, com_port: str, baudrate: int = None,
                  address: int = 0x31,
                  protocol: Union[str, Protocol] = Protocol.RUNZE,
-                 syringe_volume_ul: int = None):
+                 syringe_volume_ul: int = None, **kwargs):
         """Init. Connect to a device with the specified address via an
            RS232 interface.
            `syringe_volume_ul` is optional
@@ -24,7 +20,7 @@ class SyringePump(RunzeDevice):
            that rely on the number of encoder steps.
         """
         if (syringe_volume_ul is not None
-            and syringe_volume_ul not in self.__class__.SYRINGE_VOLUME_TO_MAX_RPM.keys()):
+            and syringe_volume_ul not in self.__class__.SYRINGE_VOLUME_TO_MAX_RPM):
             raise ValueError(f"Syringe volume ({syringe_volume_ul} [uL])is invalid "
                 "and must be one of the following values: "
                 f"{list(self.__class__.SYRINGE_VOLUME_TO_MAX_RPM.keys())}.")
@@ -34,8 +30,9 @@ class SyringePump(RunzeDevice):
         self.syringe_speed_percent = None
         self.driver_steps = 0
         # Connect to port.
+        # Pass along unused kwargs to satisfy diamond inheritance.
         super().__init__(com_port=com_port, baudrate=baudrate,
-                         address=address, protocol=protocol)
+                         address=address, protocol=protocol, **kwargs)
         self.codes = syringe_pump_codes  # Assign self.codes after parent class
                                          # constructor call so we can override
                                          # self.codes if needed (i.e: if we

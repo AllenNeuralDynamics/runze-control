@@ -1,6 +1,6 @@
 """Syringe Pump Driver."""
 from functools import reduce, wraps
-from protocol_codes import common_codes
+from runze_control.protocol_codes import common_codes
 from runze_control.protocol import *
 from runze_control.runze_protocol import FACTORY_CMD_PWD_CODE
 from runze_control import runze_protocol
@@ -11,6 +11,20 @@ from typing import Union
 from time import perf_counter
 import logging
 import struct
+
+
+def get_protocol(com_port: str, baudrate: int = 9600):
+    ser = Serial(com_port, baudrate, timeout=0.1)
+    ser.write(REQUEST_PROTOCOL_MODE)
+    reply = ser.read(32) # Read up to 32 bytes
+    return ProtocolReply(reply)
+
+
+def set_protocol(com_port: str, baudrate: int = 9600,
+                 protocol: Union[str, Protocol] = Protocol.RUNZE):
+    set_protocol_cmd = SetProtocol(Protocol(protocol).name)
+    ser = Serial(com_port, baudrate, timeout=0.1)
+    ser.write(set_protocol_cmd)
 
 
 class RunzeDevice:
