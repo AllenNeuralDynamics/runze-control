@@ -1,6 +1,9 @@
 python serial interfaces to various devices by Runze Fluid and Aurora Pro Scientific.
 
-![pumps](./assets/pics/runze_syringe_pumps.png)
+
+<p align="center">
+  <img alt="" src="./assets/pics/runze_syringe_pumps.png" width="75%">
+</p>
 
 ## Installation
 <!--
