@@ -43,6 +43,41 @@ class MultiChannelSyringePump(RotaryValve, SyringePump):
         self._send_common_cmd_runze(self.codes.CommonCmd.MoveValveToPort,
                                     position, wait=wait)
 
+    def move_absolute_in_steps(self, steps: int, wait: bool = True):
+        """Absolute move (in steps).
+
+        .. Note::
+           This feature is implemented in the software driver rather than
+           leveraging a feature on the device itself like the SY08.
+
+        """
+        if (steps > self.max_position_steps) or (steps < 0):
+            raise ValueError(f"Requested plunger movement ({steps}) is out of "
+                             f"range [0 - self.max_position_steps].")
+        # No "move-absolute" command exists for this device, so we need to
+        # compute a relative move from accumulated steps tracked in the driver.
+        desired_steps = steps
+        delta_steps = desired_steps - self.driver_steps
+        # Sending a 0-step command results in a ParameterError on the device.
+        if delta_steps == 0:
+            self.log.debug("Not sending a 0-step movement command to device.")
+            return
+        range_percent = steps/self.max_position_steps * 100.0
+        self.log.debug(f"Absolute move to {steps}/"
+                       f"{self.max_position_steps} [steps] "
+                       f"i.e: {range_percent:.2f}% full-scale range.")
+        if delta_steps > 0:
+            self.withdraw_steps(delta_steps, wait=wait)
+        else:
+            self.dispense_steps(abs(delta_steps), wait=wait)
+
+    def move_absolute_in_percent(self, percent: float, wait: bool = True):
+        """Absolute move (in percent)."""
+        if (percent > 100) or (percent < 0):
+            raise ValueError(f"Requested plunger movement ({percent}) "
+                             "is out of range [0 - 100].")
+        steps = round(percent / 100.0 * self.max_position_steps)
+        self.move_absolute_in_steps(steps, wait=wait)
 
 
 

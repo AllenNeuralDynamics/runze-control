@@ -3,6 +3,7 @@ from runze_control.protocol import Protocol
 from runze_control.runze_protocol import ReplyStatus
 from runze_control.runze_device import RunzeDevice
 from runze_control.protocol_codes import syringe_pump_codes
+from runze_control.protocol_codes import mini_sy04_codes
 from runze_control.protocol_codes import sy08_codes
 from typing import Union
 
@@ -150,9 +151,13 @@ class SyringePump(RunzeDevice):
         raise NotImplementedError
 
     def move_absolute_in_steps(self, steps: int, wait: bool = True):
+        """Move absolute in steps. Note that implementations vary depending on
+        device model."""
         raise NotImplementedError
 
     def move_absolute_in_percent(self, percent: float, wait: bool = True):
+        """Move absolute in steps. Note that implementations vary depending on
+        device model."""
         raise NotImplementedError
 
 
@@ -182,6 +187,8 @@ class MiniSY04(SyringePump):
         super().__init__(com_port=com_port, baudrate=baudrate,
                          address=address, protocol=Protocol.RUNZE,
                          syringe_volume_ul=syringe_volume_ul)
+        self.codes = syringe_pump_codes  # Override any existing codes since
+                                         # we have a superset.
 
     def move_absolute_in_steps(self, steps: int, wait: bool = True):
         """Absolute move (in steps).

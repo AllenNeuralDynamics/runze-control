@@ -16,25 +16,23 @@ class SyringePumpCommonCmd(IntEnum):
 
     """
     # Queries
-    GetSubdivision = 0x25   # microstep subdivision?
-    GetMaxSpeed = 0x27
     GetCanDestinationAddress = 0x30
-    GetCurrentChannelPosition = 0x3E
+    #GetCurrentChannelPosition = 0x3E
     GetCurrentFirmwareVersion = 0x3F
     GetMotorStatus = 0x4A  # More of an "actuator" status depending on device.
-    GetSyringePosition = 0x66
+    GetSyringePosition = 0x66 # TODO: validate that this works on SY01B
     SynchronizeSyringePosition = 0x67  # This is a query?
+
     GetMulticastChannel1Address = 0x70
     GetMulticastChannel2Address = 0x71
     GetMulticastChannel3Address = 0x72
     GetMulticastChannel4Address = 0x73
     # Commands
     RunInCW = 0x42  # Dispense. (i.e: move relative)
-    RunInCCW = 0x4D  # Aspirate (i.e: move relative)
-    ResetSyringePosition = 0x45
+    # RunInCCW --> depends on model.
+    ResetSyringePosition = 0x45  # Move syringe to the start of travel.
     ForceStop = 0x49
-    SetDynamicSpeed = 0x4B
-    ForcedReset = 0x4F
+    SetDynamicSpeed = 0x4B  # Set syringe speed.
 
 
 # Combine enums

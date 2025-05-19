@@ -27,21 +27,17 @@ COM_PORT = "/dev/ttyUSB0"
 # Connect to a single pump.
 m_channel_pump = SY01B(COM_PORT, baudrate=9600, address=0x00,
                      position_count=9, syringe_volume_ul=5000)
-#syringe_pump = None
-#for address in range(0, 0xFF+1):
-#    try:
-#        # auto-detect baud rate.
-#        syringe_pump = SY01B(COM_PORT, baudrate=9600, address=address)
-#        break
-#    except Exception:
-#        pass
 print(f"Syringe address: {m_channel_pump.get_address()}")
 print(f"Syringe baud rate: {m_channel_pump.get_rs232_baudrate()}")
 print("Resetting syringe.")
 m_channel_pump.reset_syringe_position()
 sleep(0.5)
-#print(f"Moving plunger (in percent.)")
-#syringe_pump.move_absolute_in_percent(25)
+
+percentages = [100, 25, 50, 0]
+for percent in percentages:
+    print(f"Moving plunger to {percent}% travel range.")
+    m_channel_pump.move_absolute_in_percent(percent)
+    sleep(0.5)
 
 position = random.randint(1, 9)
 print(f"Moving valve to position: {position}")
@@ -53,10 +49,9 @@ m_channel_pump.move_valve_to_position(position)
 sleep(0.5)
 
 
-#print(f"Withdrawing 10uL")
-#syringe_pump.withdraw(10)
-#print(f"Dispensing 10uL")
-#syringe_pump.dispense(10)
+microliters= 2500
+print(f"Withdrawing {microliters}[uL]")
+m_channel_pump.withdraw(microliters)
+print(f"Dispensing {microliters}[uL]")
+m_channel_pump.dispense(microliters)
 
-#print(f"Syringe position is now: {syringe_pump.get_position_steps()}")
-#syringe_pump.move_absolute_in_percent(0)
