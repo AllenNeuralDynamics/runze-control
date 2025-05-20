@@ -1,7 +1,7 @@
 """Shared syringe pump device codes."""
 from enum import IntEnum
 from itertools import chain
-from runze_control.runze_protocol import CommonCmd as RunzeCommonCmd
+from runze_control.protocol_codes.common_codes import CommonCmd as RunzeCommonCmd
 
 
 class SyringePumpCommonCmd(IntEnum):
@@ -16,25 +16,21 @@ class SyringePumpCommonCmd(IntEnum):
 
     """
     # Queries
-    GetSubdivision = 0x25   # microstep subdivision?
-    GetMaxSpeed = 0x27
-    GetCanDestinationAddress = 0x30
-    GetCurrentChannelPosition = 0x3E
-    GetCurrentFirmwareVersion = 0x3F
+    #GetCurrentChannelPosition = 0x3E
     GetMotorStatus = 0x4A  # More of an "actuator" status depending on device.
-    GetPistonPosition = 0x66
-    SynchronizePistonPosition = 0x67
+    GetSyringePosition = 0x66 # TODO: validate that this works on SY01B
+    SynchronizeSyringePosition = 0x67  # This is a query?
+
     GetMulticastChannel1Address = 0x70
     GetMulticastChannel2Address = 0x71
     GetMulticastChannel3Address = 0x72
     GetMulticastChannel4Address = 0x73
     # Commands
     RunInCW = 0x42  # Dispense. (i.e: move relative)
-    RunInCCW = 0x4D  # Aspirate (i.e: move relative)
-    Reset = 0x45
-    ForcedReset = 0x4F
-    SetDynamicSpeed = 0x4B
+    # RunInCCW --> depends on model.
+    ResetSyringePosition = 0x45  # Move syringe to the start of travel.
     ForceStop = 0x49
+    SetDynamicSpeed = 0x4B  # Set syringe speed.
 
 
 # Combine enums

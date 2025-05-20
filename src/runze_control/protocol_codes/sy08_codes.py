@@ -10,6 +10,7 @@ class SY08CommonCmd(IntEnum):
         common to all devices are part of runze_protocol_codes.CommonCmdCode"""
     # Commands
     MoveSyringeAbsolute = 0x4E # [0x0000 - 0x2EE0]
+    RunInCCW = 0x4D
 
 
 # Combine enums
