@@ -8,7 +8,7 @@ python serial interfaces to various devices by Runze Fluid and Aurora Pro Scient
 | Device    | Description               | Runze Protocol | ASCII Protocol | OEM Protocol | Webpage                                                                               |
 |-----------|---------------------------|----------------|----------------|--------------|---------------------------------------------------------------------------------------|
 | SY08      | syringe pump              | yes            | no             | no           | [SY08](https://www.runzefluid.com/products/Syringe%20Pump-sy-08.html)                 |
-| Mini-SY04 | syringe pump              | yes            | no             | no           | [Mini-SY04](https://www.runzefluid.com/uploads/file/mini-sy-04-syringe-pump-v2-3.pdf) |
+| Mini-SY04 | syringe pump              | yes            | no             | no           | [Mini-SY04](https://www.runzefluid.com/products/programmable-syringe-pump.html)       |
 | ZSB-SY01B | multichannel syringe pump | yes            | no             | no           | [ZSB-SY01B](https://www.runzefluid.com/products/multi-channel-syringe-pump.html)      |
 |           |                           |                |                |              |                                                                                       |
 
