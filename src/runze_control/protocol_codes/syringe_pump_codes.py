@@ -16,9 +16,7 @@ class SyringePumpCommonCmd(IntEnum):
 
     """
     # Queries
-    GetCanDestinationAddress = 0x30
     #GetCurrentChannelPosition = 0x3E
-    GetCurrentFirmwareVersion = 0x3F
     GetMotorStatus = 0x4A  # More of an "actuator" status depending on device.
     GetSyringePosition = 0x66 # TODO: validate that this works on SY01B
     SynchronizeSyringePosition = 0x67  # This is a query?

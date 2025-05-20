@@ -13,7 +13,7 @@ class SyringePump(RunzeDevice):
     def __init__(self, com_port: str, baudrate: int = None,
                  address: int = 0x31,
                  protocol: Union[str, Protocol] = Protocol.RUNZE,
-                 syringe_volume_ul: int = None, **kwargs):
+                 syringe_volume_ul: int = None):
         """Init. Connect to a device with the specified address via an
            RS232 interface.
            `syringe_volume_ul` is optional
@@ -31,9 +31,8 @@ class SyringePump(RunzeDevice):
         self.syringe_speed_percent = None
         self.driver_steps = 0
         # Connect to port.
-        # Pass along unused kwargs to satisfy diamond inheritance.
         super().__init__(com_port=com_port, baudrate=baudrate,
-                         address=address, protocol=protocol, **kwargs)
+                         address=address, protocol=protocol)
         self.codes = syringe_pump_codes  # Assign self.codes after parent class
                                          # constructor call so we can override
                                          # self.codes if needed (i.e: if we
@@ -104,9 +103,14 @@ class SyringePump(RunzeDevice):
 
     def force_stop(self):
         """Halt the syringe pump in its current location."""
-        # Always send--even if prior cmd has not been received.
+        # SY08 leaves a residual reply that needs to be cleared if we are
+        # halting an active movement command.
+        was_busy = super().is_busy()  # Save whether we are waiting on a reply.
         self._send_common_cmd_runze(self.codes.CommonCmd.ForceStop,
                                     wait=True, force=True)
+        # Clear the irrelevant reply from the aborted command.
+        if was_busy:
+            self.wait_for_reply(force=True)
         # Update local step count.
         self.get_position_steps()
 
@@ -187,8 +191,31 @@ class MiniSY04(SyringePump):
         super().__init__(com_port=com_port, baudrate=baudrate,
                          address=address, protocol=Protocol.RUNZE,
                          syringe_volume_ul=syringe_volume_ul)
-        self.codes = syringe_pump_codes  # Override any existing codes since
-                                         # we have a superset.
+        self.codes = mini_sy04_codes # Override any existing codes since
+                                     # we have a superset.
+    def get_firmware_version(self):
+        if self.protocol == Protocol.RUNZE:
+            version_reply = self._send_query_runze(
+                                self.codes.CommonCmd.GetFirmwareVersion)
+            subversion_reply = self._send_query_runze(
+                                self.codes.CommonCmd.GetFirmwareSubVersion)
+            version = version_reply['parameter']
+            subversion = subversion_reply['parameter']
+            return float(f"{version}.{subversion}")
+        else:
+            raise NotImplementedError
+
+    def force_stop(self):
+        """Halt the syringe pump in its current location."""
+        # MiniSY04 Force-Stop doesn't need to check if a previous cmd was sent.
+
+        # Always send--even if prior cmd has not been received.
+        self._send_common_cmd_runze(self.codes.CommonCmd.ForceStop,
+                                    wait=True, force=True)
+        # Update local step count.
+        self.get_position_steps()
+
+
 
     def move_absolute_in_steps(self, steps: int, wait: bool = True):
         """Absolute move (in steps).
@@ -246,18 +273,15 @@ class SY08(SyringePump):
         25000: 12000
     }
 
-    def force_stop(self):
-        """Halt the syringe pump in its current location."""
-        # SY08 leaves a residual reply that needs to be cleared if we are
-        # halting an active movement command.
-        was_busy = super().is_busy()  # Save whether we are waiting on a reply.
-        self._send_common_cmd_runze(self.codes.CommonCmd.ForceStop,
-                                    wait=True, force=True)
-        # Clear the irrelevant reply from the aborted command.
-        if was_busy:
-            self.wait_for_reply(force=True)
-        # Update local step count.
-        self.get_position_steps()
+    def __init__(self, com_port: str, baudrate: int = None,
+                 address: int = 0x31, syringe_volume_ul: int = None):
+        # Only RUNZE Protocol is supported for MiniSY04.
+        super().__init__(com_port=com_port, baudrate=baudrate,
+                         address=address, protocol=Protocol.RUNZE,
+                         syringe_volume_ul=syringe_volume_ul)
+        self.codes = sy08_codes # Override any existing codes since
+                                # we have a superset.
+
 
     def move_absolute_in_steps(self, steps: int, wait: bool = True):
         """Absolute move (in steps)."""

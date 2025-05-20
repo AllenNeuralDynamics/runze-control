@@ -29,6 +29,7 @@ m_channel_pump = SY01B(COM_PORT, baudrate=9600, address=0x00,
                      position_count=9, syringe_volume_ul=5000)
 print(f"Syringe address: {m_channel_pump.get_address()}")
 print(f"Syringe baud rate: {m_channel_pump.get_rs232_baudrate()}")
+print(f"Firmware Version: {m_channel_pump.get_firmware_version()}")
 print("Resetting syringe.")
 m_channel_pump.reset_syringe_position()
 sleep(0.5)

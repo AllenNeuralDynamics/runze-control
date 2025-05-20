@@ -8,6 +8,9 @@ class CommonCmd(IntEnum):
     GetRS485Baudrate = 0x22
     GetCanBaudRate = 0x23
 
+    GetCanDestinationAddress = 0x30
+    GetFirmwareVersion = 0x3F
+
 
 class FactoryCmd(IntEnum):
     """Codes for specifying the states of various calibration settings."""

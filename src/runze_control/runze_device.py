@@ -123,6 +123,18 @@ class RunzeDevice:
             cmd_str = str(dt_protocol.Commands.InitClockwise) + "R"
             self._send_dt_cmd(dt_protocol.Commands.InitClockwise, execute=True)
 
+    def get_firmware_version(self):
+        if self.protocol == Protocol.RUNZE:
+            reply = self._send_query_runze(self.codes.CommonCmd.GetFirmwareVersion)
+            b3b4 = reply['parameter'].to_bytes(2, 'little')
+            b3 = b3b4[0]
+            b4 = b3b4[1]
+            return float(f"{b3}.{b4}")
+        elif self.protocol == Protocol.DT:
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+
     def get_protocol(self):
         """Get the protocol that the device is set to communicate in."""
         raise NotImplementedError

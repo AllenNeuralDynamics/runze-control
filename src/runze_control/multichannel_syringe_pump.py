@@ -2,14 +2,11 @@
 import logging
 from runze_control.protocol import Protocol
 from runze_control.syringe_pump import SyringePump
-from runze_control.rotary_valve import RotaryValve
 from runze_control.protocol_codes import sy01_codes
 from typing import Union
 
 
-# FIXME: consider NOT doing diamond inheritance since Rotary Valve interface
-# is totally different!
-class MultiChannelSyringePump(RotaryValve, SyringePump):
+class MultiChannelSyringePump(SyringePump):
     """syringe pump with integrated rotary valve."""
 
     def __init__(self, com_port: str, baudrate: int = None,
@@ -26,9 +23,9 @@ class MultiChannelSyringePump(RotaryValve, SyringePump):
         print(f"locals in MultichannelSyringePump: {locals()}")
         super().__init__(com_port=com_port, baudrate=baudrate, address=address,
                          protocol=protocol,
-                         syringe_volume_ul=syringe_volume_ul,
-                         position_count=position_count,
-                         position_map=position_map)
+                         syringe_volume_ul=syringe_volume_ul)
+        self.position_count = position_count
+        self.position_map = position_map
         self.codes = sy01_codes  # Overwrite parent class codes.
         # Override logger and logger name.
         logger_name = self.__class__.__name__ + f".{com_port}"

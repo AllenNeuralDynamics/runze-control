@@ -32,6 +32,7 @@ syringe_pump = SY08(COM_PORT, address=0x00, syringe_volume_ul=25000)
 #        pass
 print(f"Syringe address: {syringe_pump.get_address()}")
 print(f"Syringe baud rate: {syringe_pump.get_rs232_baudrate()}")
+print(f"Firmware Version: {syringe_pump.get_firmware_version()}")
 print("Resetting syringe.")
 syringe_pump.reset_syringe_position()
 #print(f"Moving plunger (in percent.)")
