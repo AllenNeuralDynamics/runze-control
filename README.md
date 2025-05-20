@@ -58,7 +58,7 @@ syringe_pump.dispense(1000)  # Dispense 1000[uL] to the current port.
 ````
 
 A host of other commands exist to provision the syringe pump (and all other devices) with default power-up settings.
-For more details, see the [documentation]().
+See the [examples folder](./examples) for more examples.
 
 ## Logging
 All hardware transactions are logged via an instance-level logger.
