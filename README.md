@@ -1,28 +1,24 @@
-python serial interfaces to various devices by Runze Fluid and Aurora Pro Scientific.
-
-
 <p align="center">
   <img alt="" src="./assets/pics/runze_syringe_pumps.png" width="75%">
 </p>
 
-## Installation
-<!--
-To install this package from [PyPI](https://pypi.org/project/TigerASI/0.0.2/), invoke: `pip install TigerASI`.
--->
-
-To install this package from the Github in editable mode, from this directory invoke: `pip install -e .`
-
-To install this package in editable mode and build the docs locally, invoke: `pip install -e .[dev]`
+python serial interfaces to various devices by Runze Fluid and Aurora Pro Scientific.
 
 ## Supported Devices and Interfaces:
 | Device    | Description               | Runze Protocol | ASCII Protocol | OEM Protocol | Webpage                                                                               |
 |-----------|---------------------------|----------------|----------------|--------------|---------------------------------------------------------------------------------------|
-| SY08      | syringe pump              | in progress    | no             | no           | [SY08](https://www.runzefluid.com/products/Syringe%20Pump-sy-08.html)                 |
+| SY08      | syringe pump              | yes            | no             | no           | [SY08](https://www.runzefluid.com/products/Syringe%20Pump-sy-08.html)                 |
 | Mini-SY04 | syringe pump              | yes            | no             | no           | [Mini-SY04](https://www.runzefluid.com/uploads/file/mini-sy-04-syringe-pump-v2-3.pdf) |
-| ZSB-SY01B | multichannel syringe pump | in progress    | no             | no           | [ZSB-SY01B](https://www.runzefluid.com/products/multi-channel-syringe-pump.html)      |
+| ZSB-SY01B | multichannel syringe pump | yes            | no             | no           | [ZSB-SY01B](https://www.runzefluid.com/products/multi-channel-syringe-pump.html)      |
 |           |                           |                |                |              |                                                                                       |
 
 More devices to come!
+
+## Installation
+
+To install this package from the Github in editable mode, from this directory invoke: `pip install -e .`
+
+To install this package in editable mode and build the docs locally, invoke: `pip install -e .[dev]`
 
 
 ## Getting Started
