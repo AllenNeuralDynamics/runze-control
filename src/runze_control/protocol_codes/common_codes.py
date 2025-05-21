@@ -14,10 +14,10 @@ class CommonCmd(IntEnum):
 
 class FactoryCmd(IntEnum):
     """Codes for specifying the states of various calibration settings."""
-    Address = 0x00
-    RS232Baudrate = 0x01
-    RS485Baudrate = 0x02
-    CANBaudrate = 0x03
+    SetAddress = 0x00
+    SetRS232Baudrate = 0x01
+    SetRS485Baudrate = 0x02
+    SetCANBaudrate = 0x03
     PowerOnReset = 0x0E  # If set (B7=1), the valve will reset to an
                          # interstitial position between port 1 and port N upon
                          # power-up.

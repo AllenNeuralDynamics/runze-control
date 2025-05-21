@@ -10,7 +10,7 @@ class MultiChannelSyringePump(SyringePump):
     """syringe pump with integrated rotary valve."""
 
     def __init__(self, com_port: str, baudrate: int = None,
-                 address: int = 0x31,
+                 address: int = None,
                  protocol: Union[str, Protocol] = Protocol.RUNZE,
                  syringe_volume_ul: float = None, position_count: int = None,
                  position_map: dict = None):
@@ -20,7 +20,6 @@ class MultiChannelSyringePump(SyringePump):
            but enables volume and port-centric methods, rather than methods
            that rely on the number of encoder steps.
         """
-        print(f"locals in MultichannelSyringePump: {locals()}")
         super().__init__(com_port=com_port, baudrate=baudrate, address=address,
                          protocol=protocol,
                          syringe_volume_ul=syringe_volume_ul)

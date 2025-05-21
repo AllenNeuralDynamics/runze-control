@@ -11,7 +11,7 @@ from typing import Union
 class SyringePump(RunzeDevice):
 
     def __init__(self, com_port: str, baudrate: int = None,
-                 address: int = 0x31,
+                 address: int = None,
                  protocol: Union[str, Protocol] = Protocol.RUNZE,
                  syringe_volume_ul: int = None):
         """Init. Connect to a device with the specified address via an

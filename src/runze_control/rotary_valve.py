@@ -10,11 +10,10 @@ class RotaryValve(RunzeDevice):
 
     def __init__(self, com_port: str, baudrate: int = None, address: int = 0x31,
                  protocol: Union[str, Protocol] = Protocol.RUNZE,
-                 position_count: int = None, position_map: dict = None,
-                 **kwargs):
+                 position_count: int = None, position_map: dict = None):
         # Pass along unused kwargs to satisfy diamond inheritance.
         super().__init__(com_port=com_port, baudrate=baudrate,
-                         address=address, protocol=protocol, **kwargs)
+                         address=address, protocol=protocol)
         self.codes = rotary_valve_codes
         self.position_count = position_count
         self.position_map = position_map

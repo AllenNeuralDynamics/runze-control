@@ -49,7 +49,7 @@ class RunzeDevice:
     ASCII_DEFAULT_ADDRESS = 0x31 # ASCII: '0' max: 0x3F (16 devices).
 
     def __init__(self, com_port: str, baudrate: int = None,
-                 address: Union[int, str] = 0x00,
+                 address: Union[int, str] = None,
                  protocol: Union[str, Protocol] = Protocol.RUNZE):
         """Init. Connect to a device with the specified address via an
            RS232 or RS485 interface.
@@ -59,6 +59,9 @@ class RunzeDevice:
             changed to standard baud rates up through 115200bps via serial
             command.
         :param address: specify the device to connect to.
+            Note: in Runze Protocol under an RS232 connection, this value can
+                be omitted (left as None), and the device will discover it
+                automatically.
             Note: only practical in an RS485 multidrop setup.
             Note: Runze and ASCII protocols have distinct valid addresses and
                 address ranges.
@@ -86,42 +89,42 @@ class RunzeDevice:
         try:
             for br in baudrates:
                 try:
-                    self.log.debug(f"Connecting to device on port: {com_port} "
-                        f"at {br}[bps] on address: {address} "
-                        f"(hex: 0x{address:02x}, ascii: '{chr(address)}').")
+                    log_msg_suffix = "." if address is None else \
+                        f" on address: 0x{address:02x}."
+                    self.log.debug(f"Connecting to device on port: {com_port}"
+                                   f" at {br}[bps]" + log_msg_suffix)
                     # We will manually apply the timeout in the _send method.
                     self.ser = Serial(com_port, br, timeout=0)
                     self.ser.reset_input_buffer()
                     self.ser.reset_output_buffer()
                     # Test link by issuing a protocol-dependent dummy command.
-                    self.log.debug("Port open. Sending test string.")
-                    if self.protocol == Protocol.RUNZE:
-                        reply = self.get_address()
+                    if address is None:
+                        self.log.debug("Discovering device address.")
+                        self.address = 0 # Specify a temp dummy address.
+                        self.address = self.get_address()
+                    if self.protocol == Protocol.RUNZE and (address != None):
+                        device_address = self.get_address()
+                        if self.address != device_address:
+                            raise ValueError(f"Device address is incorrectly "
+                                f"specified! specified address: {address}. "
+                                f"device's actual address: {device_address}.")
                     elif self.protocol == Protocol.DT:
-                        reply = self.get_serial_number()
+                        raise NotImplementedError
                     elif self.protocol == Protocol.OEM:
                         raise NotImplementedError
                     break
                 except SerialException as e:
+                    self.cmd_send_time_s = None # Forget about last msg sent.
                     # Raise exception only if we've tried all valid baud rates.
                     self.log.debug(f"Connecting failed.")
                     if br == baudrates[-1]:
                         raise
         except SerialException as e:
-            logging.error("Error: could not open connection to device. "
-                "Is it plugged in and powered up? Is another program using it?")
+            self.log.error("Error: could not open connection to device. "
+                "Is it plugged in and powered on? Is another program using it?")
             raise
         # Restore long timeout (required for long syringe moves.)
         self._timeout_s = self.__class__.LONG_TIMEOUT_S
-
-    def init(self):
-        # Send protocol-specific handshake.
-        if self.protocol == Protocol.RUNZE:
-            pass
-        elif self.protocol == Protocol.DT:
-            # /<address>Z<do it now>
-            cmd_str = str(dt_protocol.Commands.InitClockwise) + "R"
-            self._send_dt_cmd(dt_protocol.Commands.InitClockwise, execute=True)
 
     def get_firmware_version(self):
         if self.protocol == Protocol.RUNZE:
@@ -149,6 +152,10 @@ class RunzeDevice:
         pass
 
     def get_address(self):
+        """ Get the device address. Under Runze Protocol, any device
+        that receives this command will respond with its address even if it is
+        incorrect.
+        """
         self.log.debug("Requesting address.")
         if self.protocol == Protocol.RUNZE:
             reply = self._send_query_runze(self.codes.CommonCmd.GetAddress)

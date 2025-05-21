@@ -22,39 +22,43 @@ To install this package in editable mode and build the docs locally, invoke: `pi
 
 
 ## Getting Started
-````python
+```python
 from runze_control.syringe_pump import SY01B
-````
+```
 
 If you know the baudrate of your device, you can create an instance with:
 ````python
-syringe_pump = SY01B("COM3", 115200) # Create a device instance with a known
-                                     # baudrate and default address 0x00.
-````
+syringe_pump = SY01B("COM3", 9600) # Create a device instance with a known
+                                   # baudrate.
+```
 
 If you don't know the baudrate, you can create an instance with:
-````python
-syringe_pump = SY01B("COM3") # Create a device instance with unknown
-                             # baudrate and default address 0x00.
-````
+```python
+syringe_pump = SY01B("COM3") # Create a device instance with unknown baudrate.
+```
 The above command will scan through all valid baudrates until it successfully
 connects to a device.
 
 The factory default device address is set to 0x00.
+Some devices let you change the address with a rotary switch on the physical
+device.
 If the device's address has been set to a different address, you can specify it
 with:
-````python
-syringe_pump = SY01B("COM3", bus_address=0x01) # Create a device instance with
-                                               # an unknown baudrate and
-                                               # address 0x01.
-````
+```python
+syringe_pump = SY01B("COM3", address=0x01) # Create a device instance with
+                                           # an unknown baudrate and
+                                           # address 0x01.
+```
+> [!WARNING]
+> If you have multiple devices connected to the same bus on an RS485 connection,
+> you **must** specify the address.
 
 From here, various commands exist such as:
 ````python
-syringe_pump.set_port(1)  # Select valve port 1.
-syringe_pump.withdraw(1000)  # Withdraw 1000[uL] from the current port.
-syringe_pump.set_port(10)  # Select valve port 10
-syringe_pump.dispense(1000)  # Dispense 1000[uL] to the current port.
+syringe_pump.move_valve_to_position(1)  # Select valve position 1.
+syringe_pump.withdraw(1000)  # Withdraw 1000[uL] from the current position.
+syringe_pump.move_valve_to_position(10)  # Select valve position 10.
+syringe_pump.dispense(1000)  # Dispense 1000[uL] to the current position.
 ````
 
 A host of other commands exist to provision the syringe pump (and all other devices) with default power-up settings.

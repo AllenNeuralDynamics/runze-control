@@ -25,8 +25,8 @@ COM_PORT = "/dev/ttyUSB0"
 #print(set_protocol(COM_PORT, 9600, Protocol.RUNZE))
 
 # Connect to a single pump.
-m_channel_pump = SY01B(COM_PORT, baudrate=9600, address=0x00,
-                     position_count=9, syringe_volume_ul=5000)
+m_channel_pump = SY01B(COM_PORT, baudrate=9600,
+                       position_count=9, syringe_volume_ul=5000)
 print(f"Syringe address: {m_channel_pump.get_address()}")
 print(f"Syringe baud rate: {m_channel_pump.get_rs232_baudrate()}")
 print(f"Firmware Version: {m_channel_pump.get_firmware_version()}")
