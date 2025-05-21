@@ -32,7 +32,8 @@ def set_protocol(com_port: str, baudrate: int = 9600,
 
 
 class RunzeDevice:
-    """Generic Runze Fluid Serial Device."""
+    """Base class for a generic Runze Fluid device exposing commands common
+    to all devices."""
 
     DEFAULT_TIMEOUT_S = 0.25  # Default communication timeout in seconds.
     LONG_TIMEOUT_S = 60.0  # Default communication timeout in seconds.
@@ -58,19 +59,34 @@ class RunzeDevice:
         :param baudrate: device baud rate. Factory default is 9600, but can be
             changed to standard baud rates up through 115200bps via serial
             command.
+
+            .. note::
+               Runze Protocol and ASCII Protocol have different valid baud
+               rates.
+
         :param address: specify the device to connect to.
-            Note: in Runze Protocol under an RS232 connection, this value can
-                be omitted (left as None), and the device will discover it
-                automatically.
-            Note: only practical in an RS485 multidrop setup.
-            Note: Runze and ASCII protocols have distinct valid addresses and
-                address ranges.
-            Note: external rotary switch position 0 corresponds to device 1 at
-                Runze address 0 or ASCII address '1' (i.e: 0x31).
+
+            .. note::
+               In Runze Protocol under an RS232 connection, this value can
+               be omitted (left as None), and the device will discover it
+               automatically.
+
+            .. warning::
+                Runze and ASCII protocols have distinct valid addresses and
+                address ranges. Address will be interpreted per the `protocol`
+                paramter.
+
+            .. note::
+               The device address can be specified on the physical device itself
+               for devices that have a rotary switch. Switch position 0
+               corresponds to device 1 at Runze protocol address 0 or ASCII
+               protocol address '1'.
+
         :param protocol: protocol over which to send commands to the device
             ("RUNZE" or "DT" [aka: ASCII]). Protocol must match the one
             specified on the device, but it can be changed after connecting to
             it.
+
         """
         self.address = address
         self.protocol = Protocol(protocol)
