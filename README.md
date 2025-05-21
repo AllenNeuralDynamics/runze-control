@@ -27,7 +27,7 @@ from runze_control.syringe_pump import SY01B
 ```
 
 If you know the baudrate of your device, you can create an instance with:
-````python
+```python
 syringe_pump = SY01B("COM3", 9600) # Create a device instance with a known
                                    # baudrate.
 ```
@@ -49,6 +49,7 @@ syringe_pump = SY01B("COM3", address=0x01) # Create a device instance with
                                            # an unknown baudrate and
                                            # address 0x01.
 ```
+
 > [!WARNING]
 > If you have multiple devices connected to the same bus on an RS485 connection,
 > you **must** specify the address.
