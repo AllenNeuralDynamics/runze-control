@@ -16,9 +16,24 @@ More devices to come!
 
 ## Installation
 
-To install this package from the Github in editable mode, from this directory invoke: `pip install -e .`
+To install this package directly from Github without downloading a local copy of the repository: 
+```bash
+ pip install "git+https://github.com/allenneuraldynamics/runze-control@main"
+```
 
-To install this package in editable mode and build the docs locally, invoke: `pip install -e .[dev]`
+To install this package from a local download, clone the repository. Then, from this directory, invoke:
+```bash
+pip install .
+```
+or (editable mode)
+```bash
+pip install -e .
+```
+
+Finally, to install this package in editable mode and build the docs locally, invoke:
+```bash
+pip install -e .[dev]
+```
 
 
 ## Getting Started
