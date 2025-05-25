@@ -40,25 +40,14 @@ pip install -e .[dev]
 ```python
 from runze_control.syringe_pump import SY01B
 ```
-
-If you know the baudrate of your device, you can create an instance with:
-```python
-syringe_pump = SY01B("COM3", 9600) # Create a device instance with a known
-                                   # baudrate.
-```
-
-If you don't know the baudrate, you can create an instance with:
+Create an instance with:
 ```python
 syringe_pump = SY01B("COM3") # Create a device instance with unknown baudrate.
+                             # (The package will try all compatible baudrates.)
 ```
-The above command will scan through all valid baudrates until it successfully
-connects to a device.
 
-The factory default device address is set to 0x00.
-Some devices let you change the address with a rotary switch on the physical
-device.
-If the device's address has been set to a different address, you can specify it
-with:
+The factory default device address is set to 0x00, but it's possible to change the address with either a software command or a physical rotary switch present on some devices.
+If the device's address has been set to a different address, you can specify it with:
 ```python
 syringe_pump = SY01B("COM3", address=0x01) # Create a device instance with
                                            # an unknown baudrate and
@@ -67,7 +56,7 @@ syringe_pump = SY01B("COM3", address=0x01) # Create a device instance with
 
 > [!WARNING]
 > If you have multiple devices connected to the same bus on an RS485 connection,
-> you **must** specify the address.
+> addresses _must_ be distinct and you _must_ specify the address.
 
 From here, various commands exist such as:
 ````python
