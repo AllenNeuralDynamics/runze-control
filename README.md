@@ -65,6 +65,23 @@ syringe_pump.dispense(1000)  # Dispense 1000[uL] to the current position.
 A host of other commands exist to provision the syringe pump (and all other devices) with default power-up settings.
 See the [examples folder](./examples) for more examples.
 
+## Changing Communication Protocol
+As written, this package only supports devices using _Runze_ Protocol, not _ASCII_ protocol (also referred to as _DT_ protocol in the device documentation.
+But this package provides utility functions to change the communication protocol from _DT_ to _Runze_ (and back again!).
+```python
+from runze_control.runze_device import get_protocol, set_protocol
+from runze_control.protocol import Protocol
+
+COM_PORT = "/dev/ttySB0" # Or COMx on Windows.
+
+curr_protocol = get_protocol(COM_PORT, 9600))
+print(curr_protocol)
+
+set_protocol(COM_PORT, 9600, Protocol.RUNZE)) # Change device to Runze Protocol
+                                              # (requires a powercycle to take effect)
+```
+
+
 ## Logging
 All hardware transactions are logged via an instance-level logger.
 No handlers are attached, but you can display them with this boilerplate code:
