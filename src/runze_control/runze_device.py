@@ -308,6 +308,7 @@ class RunzeDevice:
         reply_struct = struct.unpack(runze_protocol.PacketFormat.Reply, reply)
         parsed_reply = dict(zip(runze_protocol.CommonReplyFields, reply_struct))
         error = runze_protocol.ReplyStatus(parsed_reply['status'])
+        self.log.debug(f"parsed: {parsed_reply}")
         if error != runze_protocol.ReplyStatus.NormalState:
             raise RuntimeError(f"Device replied with error code: {error.name}.")
         return parsed_reply
