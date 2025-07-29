@@ -244,6 +244,11 @@ class MiniSY04(SyringePump):
             self.withdraw_steps(delta_steps, wait=wait)
         else:
             self.dispense_steps(abs(delta_steps), wait=wait)
+        # Driver can acccumulate error since the actual steps moved
+        # isn't always the desired number of steps.
+        if wait: # Sync with actual hardware position.
+            position_steps = self.get_position_steps()  # updates local count.
+            self.log.debug(f"Final position: {position_steps}")
 
     def move_absolute_in_percent(self, percent: float, wait: bool = True):
         """Absolute move (in percent)."""
