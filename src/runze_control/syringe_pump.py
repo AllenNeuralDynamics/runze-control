@@ -44,11 +44,11 @@ class SyringePump(RunzeDevice):
             "powered on, the speed change will not take place until after the "
             "first reset.")
         self.set_speed_percent(self.__class__.DEFAULT_SPEED_PERCENT)
-        self.log.debug(f"Resetting syringe (moving to ~0 position).")
+        self.log.debug(f"Resetting syringe (moving to optocoupler position).")
         self._send_query_runze(self.codes.CommonCmd.ResetSyringePosition)
         # Per datasheet, after reset, the syringe needs to be told that the
         # reset position is the 0 position.
-        self.log.debug(f"Synchronizing syringe position.")
+        self.log.debug(f"Synchronizing syringe position as '0'.")
         self._send_query_runze(self.codes.CommonCmd.SynchronizeSyringePosition)
         self.driver_steps = 0  # Reset local step count.
         self.log.debug(f"Syringe reset.")
