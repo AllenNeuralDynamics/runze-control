@@ -305,7 +305,7 @@ class RunzeDevice:
         if not len(reply):
             return None
         reply_struct = struct.unpack(runze_protocol.PacketFormat.Reply, reply)
-        arsed_reply = dict(zip(runze_protocol.CommonReplyFields, reply_struct))
+        parsed_reply = dict(zip(runze_protocol.CommonReplyFields, reply_struct))
         error = runze_protocol.ReplyStatus(parsed_reply['status'])
         self.log.debug(f"parsed: {parsed_reply}")
         if error != runze_protocol.ReplyStatus.NormalState:
