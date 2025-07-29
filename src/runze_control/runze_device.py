@@ -300,13 +300,12 @@ class RunzeDevice:
                                                   wait=wait,
                                                   force=force))
 
-    @staticmethod
-    def _parse_runze_reply(reply: bytes):
+    def _parse_runze_reply(self, reply: bytes):
         """Parse reply sent over Runze protocol into respective fields."""
         if not len(reply):
             return None
         reply_struct = struct.unpack(runze_protocol.PacketFormat.Reply, reply)
-        parsed_reply = dict(zip(runze_protocol.CommonReplyFields, reply_struct))
+        arsed_reply = dict(zip(runze_protocol.CommonReplyFields, reply_struct))
         error = runze_protocol.ReplyStatus(parsed_reply['status'])
         self.log.debug(f"parsed: {parsed_reply}")
         if error != runze_protocol.ReplyStatus.NormalState:
