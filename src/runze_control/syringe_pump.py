@@ -118,17 +118,21 @@ class SyringePump(RunzeDevice):
         return self.force_stop()
 
     def get_motor_status(self):
+        self.log.debug("Querying motor status.")
         reply = self._send_common_cmd_runze(self.codes.CommonCmd.GetMotorStatus)
         return reply['parameter']
 
     def is_busy(self):
         # Check if we are waiting on replies.
         if super().is_busy():
+            self.log.debug(f"Is syringe busy? -> yes (resolved in base class).")
             return True
         # Check motor status directly. Check for MOTOR_BUSY
         motor_status = self.get_motor_status()
         if motor_status == ReplyStatus.MotorBusy:
+            self.log.debug(f"is syringe busy? -> yes (resolved with motor status query).")
             return True
+        self.log.debug(f"is syringe busy? -> no (resolved with motor status query).")
         return False
 
     def set_speed_percent(self, percent: float, wait: bool = True):
@@ -208,7 +212,7 @@ class MiniSY04(SyringePump):
     def force_stop(self):
         """Halt the syringe pump in its current location."""
         # MiniSY04 Force-Stop doesn't need to check if a previous cmd was sent.
-
+        self.log.debug(f"Halting.")
         # Always send--even if prior cmd has not been received.
         self._send_common_cmd_runze(self.codes.CommonCmd.ForceStop,
                                     wait=True, force=True)
@@ -247,8 +251,8 @@ class MiniSY04(SyringePump):
         # Driver can acccumulate error since the actual steps moved
         # isn't always the desired number of steps.
         if wait: # Sync with actual hardware position.
+            self.log.debug(f"Updating position after absolute move.")
             position_steps = self.get_position_steps()  # updates local count.
-            self.log.debug(f"Final position: {position_steps}")
 
     def move_absolute_in_percent(self, percent: float, wait: bool = True):
         """Absolute move (in percent)."""

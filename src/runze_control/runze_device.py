@@ -307,7 +307,7 @@ class RunzeDevice:
         reply_struct = struct.unpack(runze_protocol.PacketFormat.Reply, reply)
         parsed_reply = dict(zip(runze_protocol.CommonReplyFields, reply_struct))
         error = runze_protocol.ReplyStatus(parsed_reply['status'])
-        self.log.debug(f"parsed: {parsed_reply}, status: {error.name}")
+        #self.log.debug(f"parsed: {parsed_reply}, status: {error.name}")
         if error != runze_protocol.ReplyStatus.NormalState:
             raise RuntimeError(f"Device replied with error code: {error.name}.")
         return parsed_reply
@@ -342,7 +342,7 @@ class RunzeDevice:
                                   "No command has been issued.")
         reply = bytes()
         while True:
-            # Timeout is zero, so these calls return immediately if no reply.
+            # pyseral Timeout is zero, so these calls return immediately if no reply.
             try:
                 if protocol == Protocol.RUNZE:
                     reply += self.ser.read(runze_protocol.REPLY_NUM_BYTES)

@@ -3,6 +3,7 @@
 import logging
 import pprint
 from time import sleep
+from random import uniform
 
 from runze_control.syringe_pump import MiniSY04
 
@@ -26,19 +27,19 @@ logger.info("Resetting syringe.")
 syringe_pump.reset_syringe_position()
 logger.info(f"Moving plunger (in percent.)")
 syringe_pump.move_absolute_in_percent(0) # wait = True
-
-sleep(0.5)
-logger.info(f"Starting 50% full-scale range move.")
-syringe_pump.move_absolute_in_percent(15, wait=False)
-logger.info(f"is syringe busy? -> {'yes' if syringe_pump.is_busy() else 'no'}")
-logger.info(f"is syringe busy? -> {'yes' if syringe_pump.is_busy() else 'no'}")
-logger.info(f"is syringe busy? -> {'yes' if syringe_pump.is_busy() else 'no'}")
-sleep(0.25)
-logger.info("Halting.")
-syringe_pump.halt()
-logger.info(f"Syringe position: {syringe_pump.get_position_percent()}%")
-sleep(1.0)
-logger.info(f"Resuming movement.")
-syringe_pump.move_absolute_in_percent(15)
-logger.info(f"Syringe position: {syringe_pump.get_position_percent()}%")
-logger.info(f"Syringe position: {syringe_pump.get_position_percent()}%")
+syringe_pump.set_speed_percent(20)
+for i in range(10):
+    sleep(0.5)
+    logger.info(f"Starting 50% full-scale range move.")
+    syringe_pump.move_absolute_in_percent(10, wait=False)
+    print()
+    sleep(uniform(0, 1)*0.25)
+    while syringe_pump.is_busy():
+        syringe_pump.halt()
+        sleep(0.05)
+    print()
+    logger.info(f"Resuming movement.")
+    syringe_pump.move_absolute_in_percent(0)
+    logger.info(f"Syringe position: {syringe_pump.get_position_percent(): .3f}%")
+    print()
+    sleep(1)
