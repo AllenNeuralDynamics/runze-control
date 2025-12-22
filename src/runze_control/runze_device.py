@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_protocol(com_port: str, baudrate: int = 9600):
-    ser = Serial(com_port, baudrate, timeout=0.1)
+    ser = Serial(com_port, baudrate, timeout=0.5)
     ser.write(REQUEST_PROTOCOL_MODE)
     reply = ser.read(32) # Read up to 32 bytes
     return ProtocolReply(reply)
@@ -110,7 +110,7 @@ class RunzeDevice:
                     self.log.debug(f"Connecting to device on port: {com_port}"
                                    f" at {br}[bps]" + log_msg_suffix)
                     # We will manually apply the timeout in the _send method.
-                    self.ser = Serial(com_port, br, timeout=0)
+                    self.ser = Serial(com_port, br, timeout=0.5)
                     self.ser.reset_input_buffer()
                     self.ser.reset_output_buffer()
                     # Test link by issuing a protocol-dependent dummy command.
