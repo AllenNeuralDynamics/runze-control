@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "runze_control"
-version = "0.1.0"
+version = "0.1.1"
 description = "a python driver for Aurora Pro Scientific or Runze Fluid SY-01B syringe pumps"
 dynamic = ["version"]
 license = {text= "MIT"}
