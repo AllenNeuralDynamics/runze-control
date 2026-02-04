@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_protocol(com_port: str, baudrate: int = 9600):
-    ser = Serial(com_port, baudrate, timeout=0.1)
+    ser = Serial(com_port, baudrate, timeout=RunzeDevice.DEFAULT_TIMEOUT_S)
     ser.write(REQUEST_PROTOCOL_MODE)
     reply = ser.read(32) # Read up to 32 bytes
     return ProtocolReply(reply)
@@ -35,7 +35,7 @@ class RunzeDevice:
     """Base class for a generic Runze Fluid device exposing commands common
     to all devices."""
 
-    DEFAULT_TIMEOUT_S = 0.25  # Default communication timeout in seconds.
+    DEFAULT_TIMEOUT_S = 0.5  # Default communication timeout in seconds.
     LONG_TIMEOUT_S = 60.0  # Default communication timeout in seconds.
                            # This needs to be a bit long since some device
                            # behavior (syringes moving) take several seconds
@@ -346,15 +346,19 @@ class RunzeDevice:
             try:
                 if protocol == Protocol.RUNZE:
                     reply += self.ser.read(runze_protocol.REPLY_NUM_BYTES)
+                    if len(reply) >= runze_protocol.REPLY_NUM_BYTES:
+                        break
                 elif protocol == Protocol.DT:
-                    reply += self.ser.read_until(
-                        dt_protocol.PacketFields.REPLY_FRAME_END.encode('ascii'))
+                    frame_end_ascii = dt_protocol.PacketFields.REPLY_FRAME_END.encode('ascii')
+                    reply += self.ser.read_until(frame_end)
+                    if reply[len(frame_end):] == frame_end_ascii:
+                        break
                 elif protocol == Protocol.OEM:
-                    # check checksum.
+                    # TODO: check checksum.
                     raise NotImplementedError("OEM protocol not yet implemented.")
             except SerialException:
                 pass
-            if len(reply) or not wait:
+            if not wait:
                 break
             if perf_counter() - self.cmd_send_time_s >= self._timeout_s:
                 break
