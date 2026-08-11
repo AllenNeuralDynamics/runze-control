@@ -78,7 +78,7 @@ from runze_control.protocol import Protocol
 
 COM_PORT = "/dev/ttySB0" # Or COMx on Windows.
 
-curr_protocol = get_protocol(COM_PORT, 9600))
+curr_protocol = get_protocol(COM_PORT, 9600)
 print(curr_protocol)
 
 set_protocol(COM_PORT, 9600, Protocol.RUNZE)) # Change device to Runze Protocol
